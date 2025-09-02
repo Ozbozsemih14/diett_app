@@ -124,7 +124,22 @@ cd src/frontend/diet-assistant-ui && npm test
 - Consistent naming: camelCase for variables, PascalCase for components
 - No ESLint/Prettier configuration detected - follow existing code style
 
+## Recent Major Updates
+
+### Diet Plan Integration (September 2025)
+- **DietPlan Wizard**: 5-step meal selection interface at `/plan`
+- **Meal Database**: 12 rich meal options in `src/data/mealOptions.ts`
+- **DietPlan Context**: Complete state management in `src/contexts/DietPlanContext.tsx`
+- **Dashboard Integration**: Smart data source switching between planned meals and fallback data
+- **User Journey**: Plan meals → Customize nutrition → Save → Track progress
+
 ## Common Development Tasks
+
+### Adding New Meals to Database
+1. Update `src/data/mealOptions.ts` with new meal objects
+2. Include complete nutrition data: calories, protein, carbs, fat, fiber
+3. Add cooking time, difficulty, dietary tags, and ingredients
+4. Test in DietPlan Wizard selection interface
 
 ### Adding New Components
 1. Follow existing component structure in `src/frontend/diet-assistant-ui/src/components/`
@@ -133,9 +148,10 @@ cd src/frontend/diet-assistant-ui && npm test
 4. Update `App.tsx` for new routes
 
 ### Modifying Diet Logic
-1. Backend changes in `src/diet_generator.py` or related modules
-2. Update API endpoints in `src/backend/api/app.py`
-3. Frontend integration via `src/frontend/diet-assistant-ui/src/api/mockApi.ts`
+1. DietPlan changes in `src/contexts/DietPlanContext.tsx` or `src/components/DietPlanWizard.tsx`
+2. Backend changes in `src/diet_generator.py` or related modules
+3. Update API endpoints in `src/backend/api/app.py`
+4. Frontend integration via `src/frontend/diet-assistant-ui/src/api/mockApi.ts`
 
 ### LLM Prompt Changes
 - Edit prompts in `src/llm_integration.py`

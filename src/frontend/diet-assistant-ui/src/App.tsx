@@ -12,6 +12,7 @@ import Navigation from './components/Navigation';
 import AuthPage from './components/Auth/AuthPage';
 import UserForm from './components/UserForm';
 import DietPlanView from './components/DietPlan';
+import DietPlanWizard from './components/DietPlanWizard';
 import Dashboard from './components/Dashboard';
 import Progress from './components/Progress';
 import Achievements from './components/Achievements';
@@ -161,10 +162,7 @@ function ThemedApp() {
                       </Button>
                     </Box>
                   ) : (
-                    <DietPlanView 
-                      dietPlan={dietPlan} 
-                      onBack={() => window.history.back()} 
-                    />
+                    <DietPlanWizard />
                   )}
                 </ProtectedRoute>
               } 

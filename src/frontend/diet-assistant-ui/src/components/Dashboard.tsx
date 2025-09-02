@@ -17,12 +17,14 @@ import { format } from 'date-fns';
 import { useUser } from '../contexts/UserContext';
 import { useProgress } from '../contexts/ProgressContext';
 import { useDietPlan } from '../contexts/DietPlanContext';
+import { useNavigate } from 'react-router-dom';
 
 // Motion components
 const MotionBox = motion(Box);
 const MotionPaper = motion(Paper);
 
 const Dashboard: React.FC = () => {
+  const navigate = useNavigate();
   const theme = useTheme();
   const { user } = useUser();
   const { mealProgress, selectedMeals, toggleMealCompletion } = useProgress();
@@ -969,8 +971,7 @@ const Dashboard: React.FC = () => {
                   <Button
                     variant="contained"
                     size="small"
-                    onClick={() => generateNewPlan(user?.userData)}
-                    disabled={isLoading}
+                    onClick={() => navigate('/plan')}
                     sx={{
                       backgroundColor: '#10B981',
                       '&:hover': { backgroundColor: '#0EA373' },
@@ -978,7 +979,7 @@ const Dashboard: React.FC = () => {
                       px: 2
                     }}
                   >
-                    {isLoading ? <CircularProgress size={16} /> : 'Generate Plan'}
+                    Plan My Meals
                   </Button>
                 ) : (
                   <>
