@@ -53,6 +53,7 @@ interface UserFormData {
   health_conditions: string[];
   preferred_cuisine: string;
   current_mood: string;
+  health_goal: 'Weight Loss' | 'Weight Gain' | 'Maintain Weight';
 }
 
 interface UserFormProps {
@@ -90,10 +91,9 @@ const activityLevels = [
 ];
 
 const goals = [
-  { value: 'lose', label: 'Weight Loss', icon: <FitnessCenter /> },
-  { value: 'maintain', label: 'Maintain Weight', icon: <Restaurant /> },
-  { value: 'gain', label: 'Gain Muscle', icon: <EmojiEvents /> },
-  { value: 'health', label: 'Improve Health', icon: <Favorite /> },
+  { value: 'Weight Loss', label: 'Weight Loss', icon: <FitnessCenter />, description: 'Lose weight in a healthy way' },
+  { value: 'Maintain Weight', label: 'Maintain Weight', icon: <Restaurant />, description: 'Keep current weight stable' },
+  { value: 'Weight Gain', label: 'Weight Gain', icon: <EmojiEvents />, description: 'Gain healthy weight/muscle' },
 ];
 
 export default function UserForm({ onSubmit }: UserFormProps) {
@@ -132,6 +132,7 @@ export default function UserForm({ onSubmit }: UserFormProps) {
       health_conditions: formData.healthConditions,
       preferred_cuisine: 'any',
       current_mood: 'neutral',
+      health_goal: formData.goal as 'Weight Loss' | 'Weight Gain' | 'Maintain Weight',
     };
     onSubmit(submissionData);
   };
@@ -428,6 +429,16 @@ export default function UserForm({ onSubmit }: UserFormProps) {
                     </Box>
                     <Typography variant="h6" align="center">
                       {goal.label}
+                    </Typography>
+                    <Typography 
+                      variant="body2" 
+                      align="center" 
+                      sx={{ 
+                        color: 'text.secondary',
+                        fontStyle: 'italic'
+                      }}
+                    >
+                      {goal.description}
                     </Typography>
                   </Paper>
                 ))}

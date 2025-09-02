@@ -25,6 +25,8 @@ export interface UserData {
   health_conditions: string[];
   preferred_cuisine: string;
   current_mood: string;
+  health_goal: 'Weight Loss' | 'Weight Gain' | 'Maintain Weight';
+  goal: 'lose_weight' | 'maintain' | 'gain_weight';
   calorieGoal: number;
   proteinGoal: number;
   carbsGoal: number;

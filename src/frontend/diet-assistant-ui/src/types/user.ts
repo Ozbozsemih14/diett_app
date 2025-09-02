@@ -9,6 +9,23 @@ export interface UserProfile {
     notifications: boolean;
     emailUpdates: boolean;
   };
+  healthGoal: 'Weight Loss' | 'Weight Gain' | 'Maintain Weight';
+  userData?: {
+    age: number;
+    gender: string;
+    weight: number;
+    height: number;
+    activity_level: string;
+    dietary_restrictions: string[];
+    health_conditions: string[];
+  };
+  foodCategoriesGoals: {
+    protein: { target: number; consumed: number };
+    vegetables: { target: number; consumed: number };
+    fruits: { target: number; consumed: number };
+    grains: { target: number; consumed: number };
+    dairy: { target: number; consumed: number };
+  };
   stats: {
     daysActive: number;
     plansCreated: number;
@@ -44,6 +61,24 @@ export interface Achievement {
   total: number;
   category: 'nutrition' | 'consistency' | 'social' | 'milestone';
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
+}
+
+export interface MealSuggestion {
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  category: string;
+  ingredients: string[];
+  cookTime?: number;
+}
+
+export interface TodaysMeals {
+  breakfast: MealSuggestion;
+  lunch: MealSuggestion;
+  dinner: MealSuggestion;
+  totalCalories: number;
 }
 
 export interface UserStats {

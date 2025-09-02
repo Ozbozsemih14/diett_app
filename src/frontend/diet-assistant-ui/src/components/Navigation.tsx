@@ -42,12 +42,13 @@ import {
   TrendingUp as TrendingUpIcon,
   LocalDining as LocalDiningIcon,
   Assessment,
+  School as SchoolIcon,
 } from '@mui/icons-material';
 import { useUser } from '../contexts/UserContext';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 interface NavigationProps {
-  currentPage: 'form' | 'plan' | 'dashboard' | 'progress' | 'achievements';
+  currentPage: 'form' | 'plan' | 'dashboard' | 'progress' | 'achievements' | 'workouts' | 'tips';
   isOpen: boolean;
   onToggle: () => void;
   showBackButton?: boolean;
@@ -70,6 +71,13 @@ export default function Navigation({ currentPage, isOpen, onToggle, showBackButt
       description: 'Overview of your diet progress'
     },
     { 
+      text: 'Workouts', 
+      icon: <FitnessCenterIcon />, 
+      path: '/workouts',
+      active: currentPage === 'workouts',
+      description: 'Your fitness and exercise tracking'
+    },
+    { 
       text: 'Diet Plan', 
       icon: <LocalDiningIcon />, 
       path: '/plan',
@@ -89,6 +97,13 @@ export default function Navigation({ currentPage, isOpen, onToggle, showBackButt
       path: '/achievements',
       active: currentPage === 'achievements',
       description: 'Your milestones and rewards'
+    },
+    { 
+      text: 'Nutrition Tips', 
+      icon: <SchoolIcon />, 
+      path: '/tips',
+      active: currentPage === 'tips',
+      description: 'Expert nutrition tips and advice'
     },
   ];
 
@@ -364,7 +379,7 @@ export default function Navigation({ currentPage, isOpen, onToggle, showBackButt
           )}
 
           <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            AI Diet Assistant
+            SemiHealth
           </Typography>
 
           <Box 

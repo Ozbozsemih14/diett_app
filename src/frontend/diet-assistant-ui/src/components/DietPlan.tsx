@@ -58,6 +58,7 @@ import { motion } from 'framer-motion';
 import { useUser } from '../contexts/UserContext';
 import { useProgress } from '../contexts/ProgressContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { getMealAlternatives } from '../api/mockApi';
 
 interface Achievement {
   id: string;
@@ -73,6 +74,7 @@ interface Achievement {
 interface DietPlanProps {
   dietPlan: {
     meals: Array<{
+      id?: string;
       name: string;
       time: string;
       calories: number;
@@ -80,6 +82,25 @@ interface DietPlanProps {
       carbs: number;
       fat: number;
       ingredients: string[];
+      dietary?: string[];
+      cookTime?: number;
+      prepTime?: number;
+      difficulty?: string;
+      instructions?: string[];
+      alternatives?: Array<{
+        id: string;
+        name: string;
+        calories: number;
+        protein: number;
+        carbs: number;
+        fat: number;
+        ingredients: string[];
+        dietary: string[];
+        cookTime: number;
+        prepTime: number;
+        difficulty: string;
+        instructions: string[];
+      }>;
     }>;
     nutrition: {
       calories: number;
@@ -127,6 +148,9 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
   const [mapError, setMapError] = useState<string | null>(null);
   const [nearbyStores, setNearbyStores] = useState<Store[]>([]);
   const [expandedMeal, setExpandedMeal] = useState<number | null>(null);
+  const [currentMeals, setCurrentMeals] = useState(dietPlan?.meals || []);
+  const [swapDialogOpen, setSwapDialogOpen] = useState(false);
+  const [swapMealIndex, setSwapMealIndex] = useState<number | null>(null);
   const { showNotification } = useNotification();
 
   const theme = useTheme();
@@ -137,7 +161,8 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
     updateMealProgress, 
     updateNutritionProgress,
     checkAchievements,
-    toggleMealCompletion 
+    toggleMealCompletion,
+    setSelectedMeal
   } = useProgress();
   const userData = getUserData();
 
@@ -163,11 +188,13 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
   
   // Get today's progress from mealProgress
   const todayProgress = mealProgress.find(p => p.date === today) || {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    water: 0,
+    consumed: {
+      calories: 0,
+      protein: 0,
+      carbs: 0,
+      fat: 0,
+      water: 0
+    },
     meals: {
       breakfast: false,
       lunch: false,
@@ -179,27 +206,62 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
     if (!dietPlan) return;
     
     const mealId = ['breakfast', 'lunch', 'dinner'][index];
-    const newCompleted = !todayProgress.meals[mealId as keyof typeof todayProgress.meals];
+    const currentlySelected = todayProgress.meals[mealId as keyof typeof todayProgress.meals];
+    const newSelected = !currentlySelected;
     
-    // Update meal completion status
-    await toggleMealCompletion(today, mealId as 'breakfast' | 'lunch' | 'dinner', newCompleted);
-    
-    // Update nutrition progress if meal is completed
-    if (newCompleted) {
-      await updateNutritionProgress(today, {
+    if (newSelected) {
+      // Select meal for planning
+      const selectedMeal = {
+        id: mealId,
+        name: meal.name,
         calories: meal.calories,
         protein: meal.protein,
         carbs: meal.carbs,
         fat: meal.fat,
-        water: 500 // Default water intake per meal
-      });
-      showNotification(`Great job! You've completed your ${mealId} meal!`, 'success');
+        time: meal.time || (index === 0 ? '8:00 AM' : index === 1 ? '1:00 PM' : '7:00 PM'),
+        ingredients: meal.ingredients
+      };
+      
+      setSelectedMeal(mealId as 'breakfast' | 'lunch' | 'dinner', selectedMeal);
+      showNotification(`${meal.name} selected for ${mealId}!`, 'success');
     } else {
-      showNotification(`Meal marked as incomplete. You can complete it later.`, 'info');
+      // Unselect meal
+      setSelectedMeal(mealId as 'breakfast' | 'lunch' | 'dinner', null);
+      showNotification(`${meal.name} unselected.`, 'info');
     }
-
+    
+    // Only toggle meal selection (not nutrition progress)
+    await toggleMealCompletion(today, mealId as 'breakfast' | 'lunch' | 'dinner', newSelected);
+    
     // Check for new achievements
     checkAchievements();
+  };
+
+  // Handle meal swapping
+  const handleSwapMeal = (mealIndex: number) => {
+    setSwapMealIndex(mealIndex);
+    setSwapDialogOpen(true);
+  };
+
+  // Replace meal with alternative
+  const replaceMeal = (alternativeMeal: any) => {
+    if (swapMealIndex !== null) {
+      const newMeals = [...currentMeals];
+      const mealType = ['breakfast', 'lunch', 'dinner'][swapMealIndex];
+      
+      // Create new meal object with same time but different content
+      newMeals[swapMealIndex] = {
+        ...alternativeMeal,
+        time: currentMeals[swapMealIndex].time,
+        alternatives: currentMeals[swapMealIndex].alternatives
+      };
+      
+      setCurrentMeals(newMeals);
+      setSwapDialogOpen(false);
+      setSwapMealIndex(null);
+      
+      showNotification(`Switched to ${alternativeMeal.name}!`, 'success');
+    }
   };
 
   const findNearbyStores = async () => {
@@ -231,16 +293,27 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
   };
 
   const calculateProgress = () => {
-    if (!dietPlan) return { caloriesPercent: 0, proteinPercent: 0, carbsPercent: 0 };
+    if (!dietPlan) return { caloriesPercent: 0, proteinPercent: 0, carbsPercent: 0, currentNutrition: { calories: 0, protein: 0, carbs: 0 } };
     
     const totalCalories = dietPlan.nutrition.calories;
     const totalProtein = dietPlan.nutrition.protein;
     const totalCarbs = dietPlan.nutrition.carbs;
     
+    // Calculate current nutrition from completed meals in the selected plan
+    const completedMeals = dietPlan.meals.filter((_, index) => {
+      const mealId = ['breakfast', 'lunch', 'dinner'][index];
+      return todayProgress.meals[mealId as keyof typeof todayProgress.meals];
+    });
+    
+    const currentCalories = completedMeals.reduce((sum, meal) => sum + meal.calories, 0);
+    const currentProtein = completedMeals.reduce((sum, meal) => sum + meal.protein, 0);
+    const currentCarbs = completedMeals.reduce((sum, meal) => sum + meal.carbs, 0);
+    
     return {
-      caloriesPercent: Math.round((todayProgress.calories / totalCalories) * 100),
-      proteinPercent: Math.round((todayProgress.protein / totalProtein) * 100),
-      carbsPercent: Math.round((todayProgress.carbs / totalCarbs) * 100)
+      caloriesPercent: Math.round((currentCalories / totalCalories) * 100),
+      proteinPercent: Math.round((currentProtein / totalProtein) * 100),
+      carbsPercent: Math.round((currentCarbs / totalCarbs) * 100),
+      currentNutrition: { calories: currentCalories, protein: currentProtein, carbs: currentCarbs }
     };
   };
 
@@ -392,21 +465,21 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
               {[
                 { 
                   label: 'Calories', 
-                  value: todayProgress.calories,
+                  value: progress.currentNutrition.calories,
                   target: dietPlan.nutrition.calories,
                   percent: progress.caloriesPercent,
                   color: '#60A5FA'
                 },
                 { 
                   label: 'Protein', 
-                  value: todayProgress.protein,
+                  value: progress.currentNutrition.protein,
                   target: dietPlan.nutrition.protein,
                   percent: progress.proteinPercent,
                   color: '#34D399'
                 },
                 { 
                   label: 'Carbs', 
-                  value: todayProgress.carbs,
+                  value: progress.currentNutrition.carbs,
                   target: dietPlan.nutrition.carbs,
                   percent: progress.carbsPercent,
                   color: '#FBBF24'
@@ -424,7 +497,7 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
                     </Box>
                     <LinearProgress
                       variant="determinate"
-                      value={item.percent}
+                      value={Math.min(item.percent, 100)}
                       color={getProgressColor(item.percent)}
                       sx={{
                         height: 8,
@@ -445,7 +518,7 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
 
           {/* Meals List */}
           <List>
-            {dietPlan.meals.map((meal, index) => (
+            {currentMeals.map((meal, index) => (
               <MotionListItem
                 key={index}
                 variants={itemVariants}
@@ -496,6 +569,16 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
                       >
                         <CheckCircleIcon />
                       </IconButton>
+                      {meal.alternatives && meal.alternatives.length > 0 && (
+                        <Tooltip title="Swap meal">
+                          <IconButton
+                            onClick={() => handleSwapMeal(index)}
+                            color="primary"
+                          >
+                            <SwapHorizIcon />
+                          </IconButton>
+                        </Tooltip>
+                      )}
                       <IconButton onClick={() => setExpandedMeal(expandedMeal === index ? null : index)}>
                         {expandedMeal === index ? <ExpandLessIcon /> : <ExpandMoreIcon />}
                       </IconButton>
@@ -517,6 +600,87 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
                           </ListItem>
                         ))}
                       </List>
+
+                      {/* Recipe Details */}
+                      {meal.cookTime && meal.prepTime && (
+                        <>
+                          <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary', mt: 2, mb: 2 }}>
+                            Recipe Details:
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 3, mb: 2 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <TimerIcon fontSize="small" />
+                              <Typography variant="body2">
+                                Prep: {meal.prepTime} min
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <KitchenIcon fontSize="small" />
+                              <Typography variant="body2">
+                                Cook: {meal.cookTime} min
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <MenuBookIcon fontSize="small" />
+                              <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                                {meal.difficulty || 'Medium'}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </>
+                      )}
+
+                      {/* Dietary Tags */}
+                      {meal.dietary && meal.dietary.length > 0 && (
+                        <>
+                          <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary', mt: 2, mb: 1 }}>
+                            Dietary Info:
+                          </Typography>
+                          <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 2 }}>
+                            {meal.dietary.map((diet, dietIndex) => (
+                              <Chip 
+                                key={dietIndex}
+                                label={diet} 
+                                size="small" 
+                                variant="outlined"
+                                color="primary"
+                                sx={{ textTransform: 'capitalize' }}
+                              />
+                            ))}
+                          </Box>
+                        </>
+                      )}
+
+                      {/* Cooking Instructions */}
+                      {meal.instructions && meal.instructions.length > 0 && (
+                        <>
+                          <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary', mt: 2, mb: 2 }}>
+                            Instructions:
+                          </Typography>
+                          <List dense>
+                            {meal.instructions.map((instruction, idx) => (
+                              <ListItem key={idx}>
+                                <ListItemIcon>
+                                  <Typography variant="body2" sx={{ 
+                                    bgcolor: 'primary.main', 
+                                    color: 'white', 
+                                    borderRadius: '50%', 
+                                    width: 20, 
+                                    height: 20, 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    justifyContent: 'center',
+                                    fontSize: '0.75rem'
+                                  }}>
+                                    {idx + 1}
+                                  </Typography>
+                                </ListItemIcon>
+                                <ListItemText primary={instruction} />
+                              </ListItem>
+                            ))}
+                          </List>
+                        </>
+                      )}
 
                       <Typography variant="subtitle2" gutterBottom sx={{ color: 'text.secondary', mt: 2, mb: 2 }}>
                         Nutrition:
@@ -633,6 +797,90 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setShoppingListOpen(false)}>Close</Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Meal Swap Dialog */}
+      <Dialog
+        open={swapDialogOpen}
+        onClose={() => setSwapDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Choose Alternative Meal
+          {swapMealIndex !== null && (
+            <Typography variant="subtitle2" color="text.secondary">
+              Swapping: {currentMeals[swapMealIndex]?.name}
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          {swapMealIndex !== null && currentMeals[swapMealIndex]?.alternatives && (
+            <Grid container spacing={2}>
+              {currentMeals[swapMealIndex].alternatives!.map((alternative, altIndex) => (
+                <Grid item xs={12} sm={6} key={altIndex}>
+                  <Card 
+                    sx={{ 
+                      cursor: 'pointer',
+                      '&:hover': {
+                        boxShadow: 4,
+                        transform: 'translateY(-2px)'
+                      },
+                      transition: 'all 0.2s'
+                    }}
+                    onClick={() => replaceMeal(alternative)}
+                  >
+                    <CardContent>
+                      <Typography variant="h6" gutterBottom>
+                        {alternative.name}
+                      </Typography>
+                      
+                      <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                        <Chip label={`${alternative.calories} cal`} size="small" />
+                        <Chip label={`${alternative.protein}g protein`} size="small" color="success" />
+                        {alternative.dietary.map((diet, dietIndex) => (
+                          <Chip 
+                            key={dietIndex}
+                            label={diet} 
+                            size="small" 
+                            variant="outlined"
+                            sx={{ textTransform: 'capitalize' }}
+                          />
+                        ))}
+                      </Box>
+
+                      <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <TimerIcon fontSize="small" />
+                          <Typography variant="body2">
+                            {alternative.prepTime + alternative.cookTime} min
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <KitchenIcon fontSize="small" />
+                          <Typography variant="body2" sx={{ textTransform: 'capitalize' }}>
+                            {alternative.difficulty}
+                          </Typography>
+                        </Box>
+                      </Box>
+
+                      <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                        Ingredients:
+                      </Typography>
+                      <Typography variant="body2">
+                        {alternative.ingredients.slice(0, 3).join(', ')}
+                        {alternative.ingredients.length > 3 && '...'}
+                      </Typography>
+                    </CardContent>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setSwapDialogOpen(false)}>Cancel</Button>
         </DialogActions>
       </Dialog>
     </Box>

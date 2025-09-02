@@ -252,7 +252,7 @@ export default function Achievements() {
                             <Box sx={{ flex: 1 }}>
                               <LinearProgress
                                 variant="determinate"
-                                value={(achievement.progress / achievement.total) * 100}
+                                value={Math.min((achievement.progress / achievement.total) * 100, 100)}
                                 sx={{
                                   height: 8,
                                   borderRadius: 4,

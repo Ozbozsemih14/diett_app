@@ -8,11 +8,14 @@ interface MealProgress {
     lunch: boolean;
     dinner: boolean;
   };
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  water: number;
+  // Consumed nutrition (what user actually ate)
+  consumed: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+  };
 }
 
 export interface Achievement {
@@ -29,6 +32,17 @@ export interface Achievement {
   rarity: 'common' | 'rare' | 'epic' | 'legendary';
 }
 
+interface SelectedMeal {
+  id: string;
+  name: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  time: string;
+  ingredients: string[];
+}
+
 interface ProgressContextType {
   mealProgress: MealProgress[];
   achievements: Achievement[];
@@ -40,10 +54,16 @@ interface ProgressContextType {
     fat: number;
     streak: number;
   };
+  selectedMeals: {
+    breakfast?: SelectedMeal;
+    lunch?: SelectedMeal;
+    dinner?: SelectedMeal;
+  };
   updateMealProgress: (date: string, mealType: 'breakfast' | 'lunch' | 'dinner', completed: boolean) => void;
   updateNutritionProgress: (date: string, nutrition: { calories: number; protein: number; carbs: number; fat: number; water: number }) => void;
   checkAchievements: () => void;
   toggleMealCompletion: (date: string, mealType: 'breakfast' | 'lunch' | 'dinner', completed: boolean) => Promise<void>;
+  setSelectedMeal: (mealType: 'breakfast' | 'lunch' | 'dinner', meal: SelectedMeal | null) => void;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -51,6 +71,11 @@ const ProgressContext = createContext<ProgressContextType | undefined>(undefined
 export function ProgressProvider({ children }: { children: React.ReactNode }) {
   const { user } = useUser();
   const [mealProgress, setMealProgress] = useState<MealProgress[]>([]);
+  const [selectedMeals, setSelectedMealsState] = useState<{
+    breakfast?: SelectedMeal;
+    lunch?: SelectedMeal;
+    dinner?: SelectedMeal;
+  }>({});
   const [achievements, setAchievements] = useState<Achievement[]>([
     {
       id: 'perfect_week',
@@ -87,6 +112,30 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
       total: 3,
       unlocked: false,
       rarity: 'common'
+    },
+    {
+      id: 'workout_warrior',
+      title: 'Workout Warrior',
+      description: 'Complete 3 workouts this week',
+      icon: 'FitnessCenter',
+      category: 'fitness',
+      points: 75,
+      progress: 0,
+      total: 3,
+      unlocked: false,
+      rarity: 'rare'
+    },
+    {
+      id: 'food_explorer',
+      title: 'Food Explorer',
+      description: 'Try 5 different meal suggestions',
+      icon: 'Restaurant',
+      category: 'variety',
+      points: 30,
+      progress: 0,
+      total: 5,
+      unlocked: false,
+      rarity: 'common'
     }
   ]);
 
@@ -95,7 +144,27 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     if (user) {
       const savedProgress = localStorage.getItem(`progress_${user.uid}`);
       if (savedProgress) {
-        setMealProgress(JSON.parse(savedProgress));
+        const parsed = JSON.parse(savedProgress);
+        // Migrate old format to new format
+        const migrated = parsed.map((day: any) => {
+          if ('consumed' in day) {
+            return day; // Already new format
+          } else {
+            // Old format - migrate
+            return {
+              date: day.date,
+              meals: day.meals,
+              consumed: {
+                calories: day.calories || 0,
+                protein: day.protein || 0,
+                carbs: day.carbs || 0,
+                fat: day.fat || 0,
+                water: day.water || 0
+              }
+            };
+          }
+        });
+        setMealProgress(migrated);
       }
     }
   }, [user]);
@@ -118,11 +187,13 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
             lunch: mealType === 'lunch' ? completed : false,
             dinner: mealType === 'dinner' ? completed : false
           },
-          calories: 0,
-          protein: 0,
-          carbs: 0,
-          fat: 0,
-          water: 0
+          consumed: {
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            water: 0
+          }
         }];
       }
       const updated = [...prev];
@@ -141,12 +212,22 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     setMealProgress(prev => {
       const dayIndex = prev.findIndex(d => d.date === date);
       if (dayIndex === -1) {
-        return [...prev, { date, meals: { breakfast: false, lunch: false, dinner: false }, ...nutrition }];
+        return [...prev, { 
+          date, 
+          meals: { breakfast: false, lunch: false, dinner: false }, 
+          consumed: nutrition 
+        }];
       }
       const updated = [...prev];
       updated[dayIndex] = {
         ...updated[dayIndex],
-        ...nutrition
+        consumed: {
+          calories: Math.max(0, updated[dayIndex].consumed.calories + nutrition.calories),
+          protein: Math.max(0, updated[dayIndex].consumed.protein + nutrition.protein),
+          carbs: Math.max(0, updated[dayIndex].consumed.carbs + nutrition.carbs),
+          fat: Math.max(0, updated[dayIndex].consumed.fat + nutrition.fat),
+          water: Math.max(0, updated[dayIndex].consumed.water + nutrition.water)
+        }
       };
       return updated;
     });
@@ -172,10 +253,10 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const weekProgress = mealProgress.filter(p => p.date >= weekAgo && p.date <= today);
 
-    const totalCalories = weekProgress.reduce((sum, day) => sum + day.calories, 0);
-    const totalProtein = weekProgress.reduce((sum, day) => sum + day.protein, 0);
-    const totalCarbs = weekProgress.reduce((sum, day) => sum + day.carbs, 0);
-    const totalFat = weekProgress.reduce((sum, day) => sum + day.fat, 0);
+    const totalCalories = weekProgress.reduce((sum, day) => sum + day.consumed.calories, 0);
+    const totalProtein = weekProgress.reduce((sum, day) => sum + day.consumed.protein, 0);
+    const totalCarbs = weekProgress.reduce((sum, day) => sum + day.consumed.carbs, 0);
+    const totalFat = weekProgress.reduce((sum, day) => sum + day.consumed.fat, 0);
 
     return {
       calories: Math.round((totalCalories / (2000 * 7)) * 100),
@@ -190,31 +271,61 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
     const weekProgress = mealProgress.filter(p => p.date >= weekAgo && p.date <= today);
+    
+    // Get food categories and workout data
+    const foodCategories = JSON.parse(localStorage.getItem('foodCategories') || '{}');
+    const workouts = JSON.parse(localStorage.getItem('dailyWorkouts') || '{}');
 
     setAchievements(prev => prev.map(achievement => {
-      let progress = 0;
+      let progress = achievement.progress;
       let unlocked = achievement.unlocked;
 
       switch (achievement.id) {
         case 'perfect_week':
-          progress = calculateCurrentStreak();
+          progress = Math.min(calculateCurrentStreak(), 7);
           if (progress >= 7 && !unlocked) {
             unlocked = true;
             achievement.unlockedAt = today;
           }
           break;
         case 'protein_champion':
-          const proteinDays = weekProgress.filter(day => day.protein >= 150).length;
-          progress = proteinDays;
-          if (proteinDays >= 5 && !unlocked) {
+          // Check food categories for protein completion
+          const proteinDays = Object.keys(foodCategories)
+            .filter(date => new Date(date) >= new Date(weekAgo))
+            .filter(date => {
+              const categories = foodCategories[date];
+              return categories?.protein && (categories.protein.consumed >= categories.protein.target * 0.8);
+            }).length;
+          progress = Math.min(proteinDays, 5);
+          if (progress >= 5 && !unlocked) {
             unlocked = true;
             achievement.unlockedAt = today;
           }
           break;
         case 'hydration_master':
-          const hydrationDays = weekProgress.filter(day => day.water >= 2000).length;
-          progress = hydrationDays;
-          if (hydrationDays >= 3 && !unlocked) {
+          const hydrationDays = weekProgress.filter(day => day.consumed.water >= 2000).length;
+          progress = Math.min(hydrationDays, 3);
+          if (progress >= 3 && !unlocked) {
+            unlocked = true;
+            achievement.unlockedAt = today;
+          }
+          break;
+        case 'workout_warrior':
+          // Count completed workouts this week
+          const completedWorkouts = Object.keys(workouts)
+            .filter(date => new Date(date) >= new Date(weekAgo))
+            .filter(date => workouts[date]?.completed).length;
+          progress = Math.min(completedWorkouts, 3);
+          if (progress >= 3 && !unlocked) {
+            unlocked = true;
+            achievement.unlockedAt = today;
+          }
+          break;
+        case 'food_explorer':
+          // Count different meals tried (stored in localStorage)
+          const triedMeals = JSON.parse(localStorage.getItem('triedMeals') || '[]');
+          progress = Math.min(triedMeals.length, 5);
+          if (progress >= 5 && !unlocked) {
             unlocked = true;
             achievement.unlockedAt = today;
           }
@@ -233,15 +344,30 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     updateMealProgress(date, mealType, completed);
   };
 
+  const setSelectedMeal = (mealType: 'breakfast' | 'lunch' | 'dinner', meal: SelectedMeal | null) => {
+    setSelectedMealsState(prev => ({
+      ...prev,
+      [mealType]: meal
+    }));
+    
+    // Also mark as planned in meal progress
+    if (meal) {
+      const today = new Date().toISOString().split('T')[0];
+      toggleMealCompletion(today, mealType, true);
+    }
+  };
+
   const value = {
     mealProgress,
     achievements,
+    selectedMeals,
     currentStreak: calculateCurrentStreak(),
     weeklyProgress: calculateWeeklyProgress(),
     updateMealProgress,
     updateNutritionProgress,
     checkAchievements,
-    toggleMealCompletion
+    toggleMealCompletion,
+    setSelectedMeal
   };
 
   return (

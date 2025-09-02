@@ -5,291 +5,281 @@ import {
   Grid,
   Paper,
   LinearProgress,
-  Divider,
+  CircularProgress,
   Button,
-  Avatar,
-  IconButton,
-  Card,
-  CardContent,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
   Chip,
-  Fade,
-  Zoom,
-  Slide,
-  Grow,
   useTheme,
-  useMediaQuery,
+  TextField,
+  InputAdornment,
 } from '@mui/material';
-import {
-  TrendingUp as TrendingUpIcon,
-  Restaurant as RestaurantIcon,
-  LocalDining as LocalDiningIcon,
-  EmojiEvents as EmojiEventsIcon,
-  Timer as TimerIcon,
-  Whatshot as WhatshotIcon,
-  DirectionsRun as DirectionsRunIcon,
-  Favorite as FavoriteIcon,
-  CheckCircle as CheckCircleIcon,
-} from '@mui/icons-material';
-import { useUser } from '../contexts/UserContext';
-import { useProgress, Achievement } from '../contexts/ProgressContext';
-import { format } from 'date-fns';
 import { motion } from 'framer-motion';
+import { format } from 'date-fns';
+import { useUser } from '../contexts/UserContext';
+import { useProgress } from '../contexts/ProgressContext';
 
-const MotionPaper = motion(Paper);
+// Motion components
 const MotionBox = motion(Box);
-const MotionListItem = motion(ListItem);
+const MotionPaper = motion(Paper);
 
-// Define getRarityColor function outside the component
-const getRarityColor = (rarity: string) => {
-  switch (rarity) {
-    case 'legendary':
-      return 'error';
-    case 'epic':
-      return 'secondary';
-    case 'rare':
-      return 'primary';
-    default:
-      return 'default';
-  }
-};
-
-export default function Dashboard() {
+const Dashboard: React.FC = () => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { user, getUserData } = useUser();
-  const { 
-    mealProgress, 
-    weeklyProgress, 
-    achievements,
-    updateMealProgress, 
-    updateNutritionProgress,
-    checkAchievements,
-    toggleMealCompletion
-  } = useProgress();
-  const userData = getUserData();
+  const { user } = useUser();
+  const { mealProgress, selectedMeals, toggleMealCompletion } = useProgress();
   const [currentTime, setCurrentTime] = useState(new Date());
-  
-  // Get today's date in ISO format for consistency
-  const today = new Date().toISOString().split('T')[0];
-  
-  // Get today's progress from mealProgress
-  const todayProgress = mealProgress.find(p => p.date === today) || {
-    calories: 0,
-    protein: 0,
-    carbs: 0,
-    fat: 0,
-    water: 0,
-    meals: {
-      breakfast: false,
-      lunch: false,
-      dinner: false
-    }
-  };
+  const [foodCategories, setFoodCategories] = useState<{
+    [key: string]: { current: number; total: number; unit: string; }
+  }>({
+    protein: { current: 0, total: 5, unit: 'servings' },
+    vegetables: { current: 0, total: 5, unit: 'cups' },
+    fruits: { current: 0, total: 3, unit: 'servings' },
+    grains: { current: 0, total: 4, unit: 'servings' },
+    dairy: { current: 0, total: 3, unit: 'servings' }
+  });
+  const [waterIntake, setWaterIntake] = useState({ current: 0, target: 2000 });
+  const [userWeight, setUserWeight] = useState(70);
 
-  // Define meals with dynamic completion status
-  const [todaysMeals, setTodaysMeals] = useState([
-    {
-      id: 'breakfast',
-      time: '8:00 AM',
-      name: 'Breakfast',
-      calories: 450,
-      completed: todayProgress.meals.breakfast,
-      items: ['Oatmeal with berries', 'Greek yogurt', 'Almonds'],
-      macros: {
-        protein: 20,
-        carbs: 45,
-        fat: 15
-      }
-    },
-    {
-      id: 'lunch',
-      time: '1:00 PM',
-      name: 'Lunch',
-      calories: 650,
-      completed: todayProgress.meals.lunch,
-      items: ['Grilled chicken salad', 'Quinoa', 'Avocado'],
-      macros: {
-        protein: 40,
-        carbs: 50,
-        fat: 25
-      }
-    },
-    {
-      id: 'dinner',
-      time: '7:00 PM',
-      name: 'Dinner',
-      calories: 550,
-      completed: todayProgress.meals.dinner,
-      items: ['Salmon', 'Brown rice', 'Steamed vegetables'],
-      macros: {
-        protein: 35,
-        carbs: 45,
-        fat: 20
-      }
-    }
-  ]);
-
-  // Handle meal completion toggle
-  const handleMealToggle = async (mealId: string, meal: any) => {
-    const newCompleted = !meal.completed;
-    
-    // Update meal completion status
-    await toggleMealCompletion(today, mealId as 'breakfast' | 'lunch' | 'dinner', newCompleted);
-    
-    // Update nutrition progress if meal is completed
-    if (newCompleted) {
-      await updateNutritionProgress(today, {
-        calories: meal.calories,
-        protein: meal.macros.protein,
-        carbs: meal.macros.carbs,
-        fat: meal.macros.fat,
-        water: 500 // Default water intake per meal
-      });
-    }
-
-    // Update local state
-    setTodaysMeals(prevMeals => 
-      prevMeals.map(m => 
-        m.id === mealId ? { ...m, completed: newCompleted } : m
-      )
-    );
-
-    // Check for new achievements
-    checkAchievements();
-  };
-
-  // Update current time and meal status
+  // Update current time every minute
   useEffect(() => {
     const timer = setInterval(() => {
       setCurrentTime(new Date());
-      
-      // Update meals based on current time
-      const now = new Date();
-      setTodaysMeals(prevMeals => 
-        prevMeals.map(meal => {
-          const [hours, minutes] = meal.time.split(':');
-          const period = meal.time.includes('PM') ? 'PM' : 'AM';
-          let mealHour = parseInt(hours);
-          if (period === 'PM' && mealHour !== 12) mealHour += 12;
-          if (period === 'AM' && mealHour === 12) mealHour = 0;
-          
-          const mealTime = new Date();
-          mealTime.setHours(mealHour, parseInt(minutes), 0);
-
-          // Only auto-complete if time has passed and meal wasn't manually toggled
-          if (now > mealTime && !meal.completed && !todayProgress.meals[meal.id as keyof typeof todayProgress.meals]) {
-            handleMealToggle(meal.id, meal);
-          }
-          
-          return meal;
-        })
-      );
-    }, 60000); // Check every minute
+    }, 60000);
 
     return () => clearInterval(timer);
-  }, [todayProgress]);
+  }, []);
 
-  // Calculate real-time calories left
-  const calculateCaloriesLeft = () => {
-    const dailyGoal = getUserData()?.calorieGoal || 2000;
-    return dailyGoal - (todayProgress?.calories || 0);
-  };
-
-  // Calculate real-time progress percentages
-  const calculateProgress = (nutrient: 'calories' | 'protein' | 'carbs' | 'fat') => {
-    const goals = {
-      calories: getUserData()?.calorieGoal || 2000,
-      protein: getUserData()?.proteinGoal || 150,
-      carbs: getUserData()?.carbsGoal || 250,
-      fat: getUserData()?.fatGoal || 70
-    };
+  // Load food categories and water intake from localStorage
+  useEffect(() => {
+    const today = new Date().toISOString().split('T')[0];
     
-    const currentValue = todayProgress[nutrient];
-    const goalValue = goals[nutrient];
-    
-    if (typeof currentValue !== 'number' || typeof goalValue !== 'number') {
-      return 0;
+    // Load food categories for today
+    const savedCategories = localStorage.getItem(`foodCategories_${today}`);
+    if (savedCategories) {
+      setFoodCategories(JSON.parse(savedCategories));
     }
     
-    return Math.round((currentValue / goalValue) * 100);
+    // Load water intake for today
+    const savedWater = localStorage.getItem(`waterIntake_${today}`);
+    if (savedWater) {
+      setWaterIntake(JSON.parse(savedWater));
+    }
+    
+    // Set user weight from user data
+    if (user?.userData?.weight) {
+      setUserWeight(user.userData.weight);
+    }
+  }, [user]);
+
+  // Calculate recommended water intake based on weight and activity
+  const calculateWaterIntake = () => {
+    const baseIntake = userWeight * 35; // 35ml per kg (base recommendation)
+    const activityLevel = user?.userData?.activity_level || 'sedentary';
+    const activityMultiplier = {
+      'sedentary': 1.0,
+      'light': 1.1, 
+      'moderate': 1.2,
+      'active': 1.3,
+      'very_active': 1.4
+    }[activityLevel] || 1.0;
+    
+    const recommendedIntake = Math.round(baseIntake * activityMultiplier);
+    
+    setWaterIntake(prev => ({ ...prev, target: recommendedIntake }));
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`waterIntake_${today}`, JSON.stringify({ 
+      current: waterIntake.current, 
+      target: recommendedIntake 
+    }));
   };
 
+  // Get current activity multiplier for display
+  const getActivityMultiplier = () => {
+    const activityLevel = user?.userData?.activity_level || 'sedentary';
+    return {
+      'sedentary': 1.0,
+      'light': 1.1,
+      'moderate': 1.2, 
+      'active': 1.3,
+      'very_active': 1.4
+    }[activityLevel] || 1.0;
+  };
+
+  // Calculate what the target should be
+  const getCurrentTarget = () => {
+    return Math.round(userWeight * 35 * getActivityMultiplier());
+  };
+
+  // Add water intake (250ml per glass)
+  const addWaterGlass = () => {
+    const newCurrent = waterIntake.current + 250;
+    const updated = { ...waterIntake, current: newCurrent };
+    setWaterIntake(updated);
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`waterIntake_${today}`, JSON.stringify(updated));
+  };
+
+  // Update food category progress
+  const updateFoodCategory = (category: string, amount: number) => {
+    setFoodCategories(prev => {
+      const updated = {
+        ...prev,
+        [category]: {
+          ...prev[category],
+          current: Math.min(prev[category].current + amount, prev[category].total)
+        }
+      };
+      
+      // Save to localStorage
+      const today = new Date().toISOString().split('T')[0];
+      localStorage.setItem(`foodCategories_${today}`, JSON.stringify(updated));
+      
+      return updated;
+    });
+  };
+
+  // Get today's meals from selected meals or mock data
+  const getTodaysMeals = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayProgress = mealProgress.find(p => p.date === today);
+    
+    return [
+      {
+        name: 'Breakfast',
+        time: '8:00 AM',
+        description: selectedMeals.breakfast?.name || 'Oatmeal with berries, Greek yogurt, Almonds',
+        calories: selectedMeals.breakfast?.calories || 350,
+        completed: todayProgress?.meals.breakfast || false,
+        color: todayProgress?.meals.breakfast ? '#10B981' : '#9CA3AF'
+      },
+      {
+        name: 'Lunch', 
+        time: '1:00 PM',
+        description: selectedMeals.lunch?.name || 'Grilled chicken salad, Quinoa, Avocado',
+        calories: selectedMeals.lunch?.calories || 520,
+        completed: todayProgress?.meals.lunch || false,
+        color: todayProgress?.meals.lunch ? '#10B981' : '#9CA3AF'
+      },
+      {
+        name: 'Dinner',
+        time: '7:00 PM', 
+        description: selectedMeals.dinner?.name || 'Salmon, Brown rice, Steamed vegetables',
+        calories: selectedMeals.dinner?.calories || 550,
+        completed: todayProgress?.meals.dinner || false,
+        color: todayProgress?.meals.dinner ? '#10B981' : '#9CA3AF'
+      }
+    ];
+  };
+
+  // Toggle meal completion and update overview
+  const handleMealToggle = async (mealType: 'breakfast' | 'lunch' | 'dinner') => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayProgress = mealProgress.find(p => p.date === today);
+    const currentStatus = todayProgress?.meals[mealType] || false;
+    
+    await toggleMealCompletion(today, mealType, !currentStatus);
+  };
+
+  // Calculate overview statistics based on meal completion
+  const getOverviewStats = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todayProgress = mealProgress.find(p => p.date === today);
+    const meals = getTodaysMeals();
+    
+    // Calculate completed meals
+    const completedMeals = meals.filter(meal => meal.completed).length;
+    const totalMeals = meals.length;
+    
+    // Calculate remaining calories from incomplete meals
+    const incompleteMeals = meals.filter(meal => !meal.completed);
+    const remainingCalories = incompleteMeals.reduce((total, meal) => total + meal.calories, 0);
+    
+    // Calculate total possible calories
+    const totalCalories = meals.reduce((total, meal) => total + meal.calories, 0);
+    const consumedCalories = totalCalories - remainingCalories;
+    const dailyGoalProgress = Math.round((consumedCalories / (user?.userData?.calorieGoal || 2000)) * 100);
+    
+    // Calculate streak (simplified)
+    const streak = mealProgress.filter(day => 
+      day.meals.breakfast && day.meals.lunch && day.meals.dinner
+    ).length;
+    
+    return {
+      remainingCalories,
+      completedMeals,
+      totalMeals,
+      dailyGoalProgress,
+      streak: Math.min(streak, 30) // Cap at 30 for display
+    };
+  };
+
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
       opacity: 1,
       transition: {
-        staggerChildren: 0.1
-      }
-    }
+        duration: 0.6,
+        staggerChildren: 0.1,
+      },
+    },
   };
 
   const itemVariants = {
-    hidden: { y: 20, opacity: 0 },
+    hidden: { opacity: 0, y: 20 },
     visible: {
-      y: 0,
       opacity: 1,
+      y: 0,
       transition: {
-        duration: 0.5
-      }
-    }
+        duration: 0.4,
+        ease: 'easeOut',
+      },
+    },
   };
 
   return (
-    <Box sx={{ p: { xs: 2, md: 4 } }}>
-      {/* Welcome Section with Current Time */}
+    <MotionBox
+      variants={containerVariants}
+      initial="hidden"
+      animate="visible"
+      sx={{ 
+        minHeight: '100vh',
+        background: theme.palette.mode === 'dark'
+          ? 'linear-gradient(135deg, #1F2937 0%, #111827 100%)'
+          : 'linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%)',
+      }}
+    >
+      {/* Header */}
       <MotionBox
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        sx={{ 
-          mb: 4, 
-          display: 'flex', 
-          alignItems: 'center', 
-          gap: 2,
-          p: 3,
-          borderRadius: 2,
+        variants={itemVariants}
+        sx={{
           background: theme.palette.mode === 'dark'
-            ? 'linear-gradient(135deg, rgba(37, 99, 235, 0.1) 0%, rgba(167, 139, 250, 0.1) 100%)'
-            : 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+            ? 'linear-gradient(135deg, rgba(59, 130, 246, 0.8) 0%, rgba(139, 92, 246, 0.8) 100%)'
+            : 'linear-gradient(135deg, rgba(59, 130, 246, 0.9) 0%, rgba(139, 92, 246, 0.9) 100%)',
+          p: 4,
+          mb: 4,
+          borderRadius: '0 0 24px 24px',
+          boxShadow: '0 8px 32px rgba(59, 130, 246, 0.3)',
         }}
       >
-        <Avatar
-          src={user?.photoURL || undefined}
-          sx={{ 
-            width: 64, 
-            height: 64, 
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(96, 165, 250, 0.2)' : 'primary.main',
-            color: theme.palette.mode === 'dark' ? '#60A5FA' : 'white',
-            boxShadow: '0 4px 20px rgba(0,0,0,0.1)',
-            transition: 'transform 0.3s ease',
-            '&:hover': {
-              transform: 'scale(1.05)'
-            }
-          }}
-        >
-          {user?.displayName?.[0]}
-        </Avatar>
-        <Box>
+        <Box sx={{ textAlign: 'center' }}>
           <Typography 
             variant="h4" 
-            gutterBottom 
             sx={{ 
-              color: theme.palette.mode === 'dark' ? '#F3F4F6' : 'white',
-              fontWeight: 'bold',
-              textShadow: theme.palette.mode === 'dark' ? 'none' : '0 2px 4px rgba(0,0,0,0.1)'
+              color: '#FFFFFF',
+              fontSize: '2rem',
+              fontWeight: 700,
+              mb: 1
             }}
           >
-            Welcome back, {user?.displayName}!
+            Welcome back, {user?.displayName || 'test'}!
           </Typography>
           <Typography 
             variant="subtitle1" 
             sx={{ 
-              color: theme.palette.mode === 'dark' ? '#D1D5DB' : 'rgba(255,255,255,0.9)'
+              color: 'rgba(255,255,255,0.9)'
             }}
           >
             {format(currentTime, 'EEEE, MMMM d • h:mm a')}
@@ -297,22 +287,134 @@ export default function Dashboard() {
         </Box>
       </MotionBox>
       
-      <Grid container spacing={3}>
-        {/* Today's Overview */}
-        <Grid item xs={12} lg={8}>
+      <Grid container spacing={3} sx={{ p: 3 }}>
+        {/* Today's Workout */}
+        <Grid item xs={12} md={6}>
           <MotionPaper
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
+            variants={itemVariants}
             sx={{ 
               p: 3, 
               mb: 3,
               background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 8px 32px rgba(0,0,0,0.1)',
+                ? 'linear-gradient(135deg, rgba(68, 46, 30, 0.95) 0%, rgba(41, 28, 19, 0.95) 100%)'
+                : 'linear-gradient(135deg, #8B4513 0%, #654321 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <span style={{ fontSize: '24px', marginRight: '12px' }}>🔥</span>
+              <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
+                Today's Workout
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                Exercise Type
+              </Typography>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
+                Duration
+              </Typography>
+            </Box>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+              <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
+                Yoga
+              </Typography>
+              <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
+                60 min
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 2 }}>
+              Calories Burned: 180 cal
+            </Typography>
+            <LinearProgress 
+              variant="determinate" 
+              value={45} 
+              sx={{ 
+                height: 8, 
+                borderRadius: 4,
+                bgcolor: 'rgba(255,255,255,0.2)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: '#FF6B35',
+                }
+              }}
+            />
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1, textAlign: 'right' }}>
+              45%
+            </Typography>
+          </MotionPaper>
+        </Grid>
+
+        {/* Post-Workout Nutrition */}
+        <Grid item xs={12} md={6}>
+          <MotionPaper
+            variants={itemVariants}
+            sx={{ 
+              p: 3, 
+              mb: 3,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(16, 75, 68, 0.95) 0%, rgba(8, 47, 43, 0.95) 100%)'
+                : 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+            }}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <span style={{ fontSize: '24px', marginRight: '12px' }}>🍽️</span>
+              <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
+                Post-Workout Nutrition
+              </Typography>
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 3 }}>
+              Recommended after your yoga workout:
+            </Typography>
+            <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
+              {['Protein Shake', 'Banana + Nuts', 'Greek Yogurt'].map((item) => (
+                <Chip
+                  key={item}
+                  label={item}
+                  sx={{
+                    backgroundColor: 'rgba(255,255,255,0.2)',
+                    color: '#FFFFFF',
+                    fontSize: '0.8rem',
+                    '&:hover': {
+                      backgroundColor: 'rgba(255,255,255,0.3)',
+                    }
+                  }}
+                />
+              ))}
+            </Box>
+            <Box sx={{
+              backgroundColor: 'rgba(255,255,255,0.1)',
+              borderRadius: '8px',
+              p: 2,
+            }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                <span style={{ fontSize: '16px', marginRight: '8px' }}>🎯</span>
+                <Typography variant="body2" sx={{ color: '#FFFFFF', fontWeight: 500 }}>
+                  Workout Day Bonus
+                </Typography>
+              </Box>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
+                +180 calories added to your daily goal!
+              </Typography>
+            </Box>
+          </MotionPaper>
+        </Grid>
+
+        {/* Today's Meal Suggestions */}
+        <Grid item xs={12}>
+          <MotionPaper
+            variants={itemVariants}
+            sx={{ 
+              p: 3, 
+              mb: 3,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(55, 65, 81, 0.95) 0%, rgba(31, 41, 55, 0.95) 100%)'
+                : 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               borderRadius: '16px',
               backdropFilter: 'blur(10px)',
               border: theme.palette.mode === 'dark'
@@ -320,305 +422,486 @@ export default function Dashboard() {
                 : 'none',
             }}
           >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                mb: 3,
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <span style={{ fontSize: '24px', marginRight: '12px' }}>🍽️</span>
+              <Typography variant="h6" sx={{ 
                 color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-              }}
-            >
-              Today's Overview
-            </Typography>
-            <Grid container spacing={3} sx={{ mb: 4 }}>
+                fontWeight: 600
+              }}>
+                Today's Meal Suggestions
+              </Typography>
+            </Box>
+            <Grid container spacing={3}>
               {[
                 {
-                  icon: <LocalDiningIcon />,
-                  value: calculateCaloriesLeft(),
-                  label: 'Calories Left',
-                  color: '#60A5FA',
-                  bgColor: 'rgba(96, 165, 250, 0.15)'
+                  title: 'Breakfast',
+                  meal: 'Oatmeal with Berries',
+                  calories: '350 cal',
+                  protein: '12g protein',
+                  time: '15min',
+                  ingredients: ['Oats', 'Blueberries', 'Almonds'],
+                  color: '#8B5CF6'
                 },
                 {
-                  icon: <DirectionsRunIcon />,
-                  value: `${todaysMeals.filter(meal => meal.completed).length}/${todaysMeals.length}`,
-                  label: 'Meals Completed',
-                  color: '#34D399',
-                  bgColor: 'rgba(52, 211, 153, 0.15)'
+                  title: 'Lunch',
+                  meal: 'Grilled Chicken Salad',
+                  calories: '450 cal',
+                  protein: '35g protein',
+                  time: '20min',
+                  ingredients: ['Chicken breast', 'Mixed greens', 'Cherry tomatoes'],
+                  color: '#10B981'
                 },
                 {
-                  icon: <WhatshotIcon />,
-                  value: `${Math.round((todaysMeals.filter(meal => meal.completed).length / todaysMeals.length) * 100)}%`,
-                  label: 'Daily Goal',
-                  color: '#FBBF24',
-                  bgColor: 'rgba(251, 191, 36, 0.15)'
-                },
-                {
-                  icon: <FavoriteIcon />,
-                  value: weeklyProgress.streak || 0,
-                  label: 'Day Streak',
-                  color: '#F87171',
-                  bgColor: 'rgba(248, 113, 113, 0.15)'
+                  title: 'Dinner',
+                  meal: 'Salmon with Quinoa',
+                  calories: '520 cal',
+                  protein: '40g protein',
+                  time: '25min',
+                  ingredients: ['Salmon fillet', 'Quinoa', 'Broccoli'],
+                  color: '#F59E0B'
                 }
-              ].map((stat, index) => (
-                <Grid item xs={12} sm={6} md={3} key={index}>
-                  <Paper
+              ].map((meal, index) => (
+                <Grid item xs={12} md={4} key={index}>
+                  <Box
                     sx={{
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? 'rgba(55, 65, 81, 0.5)' 
+                        : 'rgba(248, 250, 252, 0.8)',
+                      borderRadius: '12px',
                       p: 3,
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      background: theme.palette.mode === 'dark' ? stat.bgColor : 'white',
-                      border: theme.palette.mode === 'dark' ? `1px solid ${stat.color}40` : 'none',
-                      borderRadius: '16px',
-                      boxShadow: theme.palette.mode === 'dark'
-                        ? '0 4px 20px rgba(0,0,0,0.4)'
-                        : '0 4px 20px rgba(0,0,0,0.1)',
+                      border: `2px solid ${meal.color}20`,
+                      transition: 'transform 0.2s ease-in-out',
                       '&:hover': {
                         transform: 'translateY(-4px)',
-                        boxShadow: theme.palette.mode === 'dark'
-                          ? '0 8px 25px rgba(0,0,0,0.5)'
-                          : '0 8px 25px rgba(0,0,0,0.2)',
-                      },
-                      transition: 'all 0.3s ease',
+                      }
                     }}
                   >
-                    <Box
-                      sx={{
-                        width: 48,
-                        height: 48,
-                        borderRadius: '50%',
+                    <Typography variant="h6" sx={{ 
+                      color: meal.color, 
+                      mb: 1, 
+                      fontSize: '1.1rem',
+                      fontWeight: 600 
+                    }}>
+                      {meal.title}
+                    </Typography>
+                    <Typography variant="h6" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                      mb: 2,
+                      fontSize: '1rem'
+                    }}>
+                      {meal.meal}
+                    </Typography>
+                    <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                        fontWeight: 500
+                      }}>
+                        {meal.calories}
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                        fontWeight: 500
+                      }}>
+                        {meal.protein}
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
                         display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        mb: 2,
-                        background: theme.palette.mode === 'dark' ? `${stat.color}40` : stat.bgColor,
-                        color: stat.color
-                      }}
-                    >
-                      {stat.icon}
+                        alignItems: 'center'
+                      }}>
+                        <span style={{ fontSize: '14px', marginRight: '4px' }}>⏱️</span>
+                        {meal.time}
+                      </Typography>
                     </Box>
-                    <Typography 
-                      variant="h4" 
+                    <Box sx={{ display: 'flex', gap: 0.5, flexWrap: 'wrap' }}>
+                      {meal.ingredients.map((ingredient) => (
+                        <Chip
+                          key={ingredient}
+                          label={ingredient}
+                          size="small"
+                          sx={{
+                            backgroundColor: `${meal.color}20`,
+                            color: meal.color,
+                            fontSize: '0.75rem',
+                            fontWeight: 500,
+                          }}
+                        />
+                      ))}
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+            <Typography variant="h6" sx={{ 
+              textAlign: 'center',
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+              mt: 3,
+              fontSize: '1.1rem',
+              fontWeight: 600
+            }}>
+              Total Daily Calories: 1320 cal
+            </Typography>
+          </MotionPaper>
+        </Grid>
+
+        {/* Food Categories Progress */}
+        <Grid item xs={12}>
+          <MotionPaper
+            variants={itemVariants}
+            sx={{ 
+              p: 3, 
+              mb: 3,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
+                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+              border: theme.palette.mode === 'dark'
+                ? '1px solid rgba(255,255,255,0.1)'
+                : 'none',
+            }}
+          >
+            <Typography variant="h6" sx={{ 
+              mb: 3,
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+              fontWeight: 600,
+            }}>
+              Food Categories Progress
+            </Typography>
+            <Grid container spacing={3}>
+              {[
+                { name: 'Protein', current: foodCategories.protein.current, total: foodCategories.protein.total, color: '#EF4444', unit: foodCategories.protein.unit, key: 'protein' },
+                { name: 'Vegetables', current: foodCategories.vegetables.current, total: foodCategories.vegetables.total, color: '#10B981', unit: foodCategories.vegetables.unit, key: 'vegetables' },
+                { name: 'Fruits', current: foodCategories.fruits.current, total: foodCategories.fruits.total, color: '#F59E0B', unit: foodCategories.fruits.unit, key: 'fruits' },
+                { name: 'Grains', current: foodCategories.grains.current, total: foodCategories.grains.total, color: '#8B5CF6', unit: foodCategories.grains.unit, key: 'grains' },
+                { name: 'Dairy', current: foodCategories.dairy.current, total: foodCategories.dairy.total, color: '#3B82F6', unit: foodCategories.dairy.unit, key: 'dairy' }
+              ].map((category, index) => (
+                <Grid item xs={12} sm={6} md={2.4} key={index}>
+                  <Box sx={{ textAlign: 'center' }}>
+                    <Box sx={{ position: 'relative', display: 'inline-flex', mb: 2 }}>
+                      <CircularProgress
+                        variant="determinate"
+                        value={(category.current / category.total) * 100}
+                        size={80}
+                        thickness={6}
+                        sx={{
+                          color: category.color,
+                          '& .MuiCircularProgress-circle': {
+                            strokeLinecap: 'round',
+                          },
+                        }}
+                      />
+                      <CircularProgress
+                        variant="determinate"
+                        value={100}
+                        size={80}
+                        thickness={6}
+                        sx={{
+                          color: theme.palette.mode === 'dark' 
+                            ? 'rgba(255,255,255,0.1)' 
+                            : 'rgba(0,0,0,0.1)',
+                          position: 'absolute',
+                          left: 0,
+                        }}
+                      />
+                      <Box
+                        sx={{
+                          top: 0,
+                          left: 0,
+                          bottom: 0,
+                          right: 0,
+                          position: 'absolute',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column',
+                        }}
+                      >
+                        <Typography
+                          variant="h6"
+                          sx={{ 
+                            color: category.color,
+                            fontWeight: 'bold',
+                            fontSize: '1.2rem'
+                          }}
+                        >
+                          {category.current}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          sx={{ 
+                            color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                            fontSize: '0.7rem'
+                          }}
+                        >
+                          /{category.total}
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <Typography
+                      variant="h6"
                       sx={{ 
-                        mb: 1,
-                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
                         fontWeight: 600,
+                        mb: 1
                       }}
                     >
-                      {stat.value}
+                      {category.name}
                     </Typography>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="caption"
                       sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#718096',
-                        textAlign: 'center',
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
                       }}
                     >
-                      {stat.label}
+                      {category.unit}
                     </Typography>
-                  </Paper>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={(category.current / category.total) * 100} 
+                      sx={{ 
+                        height: 4, 
+                        borderRadius: 2,
+                        mt: 1,
+                        bgcolor: theme.palette.mode === 'dark' 
+                          ? `${category.color}20`
+                          : `${category.color}30`,
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: category.color,
+                        }
+                      }}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => updateFoodCategory(category.key, 1)}
+                      disabled={category.current >= category.total}
+                      sx={{
+                        mt: 1,
+                        minWidth: 'auto',
+                        px: 1,
+                        py: 0.5,
+                        fontSize: '0.7rem',
+                        borderColor: category.color,
+                        color: category.color,
+                        '&:hover': {
+                          borderColor: category.color,
+                          backgroundColor: `${category.color}10`
+                        }
+                      }}
+                    >
+                      +1
+                    </Button>
+                  </Box>
                 </Grid>
               ))}
             </Grid>
           </MotionPaper>
+        </Grid>
 
-          {/* Today's Meals */}
+        {/* Health Goal Progress */}
+        <Grid item xs={12}>
           <MotionPaper
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
+            variants={itemVariants}
             sx={{ 
-              p: 3,
+              p: 3, 
+              mb: 3,
               background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 8px 32px rgba(0,0,0,0.1)',
+                ? 'linear-gradient(135deg, rgba(67, 56, 202, 0.2) 0%, rgba(99, 102, 241, 0.1) 100%)'
+                : 'linear-gradient(135deg, #EDE9FE 0%, #F3F4F6 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               borderRadius: '16px',
               backdropFilter: 'blur(10px)',
               border: theme.palette.mode === 'dark'
-                ? '1px solid rgba(255,255,255,0.1)'
-                : 'none',
+                ? '1px solid rgba(139, 92, 246, 0.3)'
+                : '1px solid rgba(139, 92, 246, 0.2)',
             }}
           >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                mb: 3,
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+              <span style={{ fontSize: '24px', marginRight: '12px' }}>🏆</span>
+              <Typography variant="h6" sx={{ 
                 color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-                fontSize: '1.25rem',
                 fontWeight: 600,
-              }}
-            >
-              Today's Meals
+              }}>
+                Health Goal Progress
+              </Typography>
+            </Box>
+            
+            <Typography variant="h4" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+              fontWeight: 700,
+              mb: 1
+            }}>
+              Weight Loss
             </Typography>
-            <List>
-              {todaysMeals.map((meal, index) => (
-                <React.Fragment key={meal.id}>
-                  <MotionListItem
-                    onClick={() => handleMealToggle(meal.id, meal)}
-                    sx={{
-                      cursor: 'pointer',
-                      borderRadius: '12px',
-                      mb: 2,
-                      background: theme.palette.mode === 'dark'
-                        ? meal.completed 
-                          ? 'linear-gradient(135deg, rgba(52, 211, 153, 0.2) 0%, rgba(52, 211, 153, 0.1) 100%)'
-                          : 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
-                        : meal.completed
-                          ? 'linear-gradient(135deg, #4CAF50 0%, #45a049 100%)'
-                          : 'rgba(255,255,255,0.8)',
-                      boxShadow: theme.palette.mode === 'dark'
-                        ? '0 4px 20px rgba(0,0,0,0.4)'
-                        : '0 4px 12px rgba(0,0,0,0.05)',
-                      border: theme.palette.mode === 'dark'
-                        ? '1px solid rgba(255,255,255,0.1)'
-                        : 'none',
-                      transition: 'all 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateX(5px)',
-                        boxShadow: theme.palette.mode === 'dark'
-                          ? '0 8px 25px rgba(0,0,0,0.5)'
-                          : '0 6px 16px rgba(0,0,0,0.1)'
-                      }
-                    }}
-                  >
-                    <ListItemIcon>
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: theme.palette.mode === 'dark'
-                            ? meal.completed 
-                              ? 'rgba(52, 211, 153, 0.2)'
-                              : 'rgba(255,255,255,0.1)'
-                            : meal.completed 
-                              ? 'white' 
-                              : 'grey.400',
-                          color: theme.palette.mode === 'dark'
-                            ? meal.completed
-                              ? '#34D399'
-                              : '#D1D5DB'
-                            : meal.completed
-                              ? 'success.main'
-                              : 'white',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-                        }}
-                      >
-                        {meal.completed ? <CheckCircleIcon /> : <RestaurantIcon />}
-                      </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <Typography 
-                            variant="subtitle1" 
-                            sx={{ 
-                              color: theme.palette.mode === 'dark'
-                                ? meal.completed
-                                  ? '#34D399'
-                                  : '#F3F4F6'
-                                : meal.completed
-                                  ? 'white'
-                                  : 'text.primary',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            {meal.name}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            label={`${meal.calories} cal`}
-                            sx={{ 
-                              bgcolor: theme.palette.mode === 'dark'
-                                ? meal.completed
-                                  ? 'rgba(52, 211, 153, 0.2)'
-                                  : 'rgba(255,255,255,0.1)'
-                                : meal.completed
-                                  ? 'white'
-                                  : 'grey.200',
-                              color: theme.palette.mode === 'dark'
-                                ? meal.completed
-                                  ? '#34D399'
-                                  : '#D1D5DB'
-                                : meal.completed
-                                  ? 'success.main'
-                                  : 'text.primary',
-                              fontWeight: 'bold',
-                              border: theme.palette.mode === 'dark'
-                                ? `1px solid ${meal.completed ? 'rgba(52, 211, 153, 0.2)' : 'rgba(255,255,255,0.1)'}`
-                                : 'none',
-                            }}
-                          />
-                        </Box>
-                      }
-                      secondary={
-                        <>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: theme.palette.mode === 'dark'
-                                ? meal.completed
-                                  ? 'rgba(52, 211, 153, 0.8)'
-                                  : '#D1D5DB'
-                                : meal.completed
-                                  ? 'rgba(255,255,255,0.8)'
-                                  : 'text.secondary'
-                            }}
-                          >
-                            {meal.time}
-                          </Typography>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: theme.palette.mode === 'dark'
-                                ? meal.completed
-                                  ? 'rgba(52, 211, 153, 0.8)'
-                                  : '#D1D5DB'
-                                : meal.completed
-                                  ? 'rgba(255,255,255,0.8)'
-                                  : 'text.secondary'
-                            }}
-                          >
-                            {meal.items.join(', ')}
-                          </Typography>
-                        </>
-                      }
-                    />
-                  </MotionListItem>
-                  {index < todaysMeals.length - 1 && (
-                    <Divider 
-                      sx={{ 
-                        my: 2,
-                        borderColor: theme.palette.mode === 'dark'
-                          ? 'rgba(255,255,255,0.1)'
-                          : 'rgba(0,0,0,0.1)'
-                      }} 
-                    />
-                  )}
-                </React.Fragment>
-              ))}
-            </List>
+            
+            <Typography variant="body1" sx={{ 
+              color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+              mb: 3
+            }}>
+              Daily Calorie Goal
+            </Typography>
+
+            <LinearProgress 
+              variant="determinate" 
+              value={75} 
+              sx={{ 
+                height: 12, 
+                borderRadius: 6,
+                mb: 3,
+                bgcolor: theme.palette.mode === 'dark' 
+                  ? 'rgba(139, 92, 246, 0.2)'
+                  : 'rgba(139, 92, 246, 0.3)',
+                '& .MuiLinearProgress-bar': {
+                  bgcolor: '#8B5CF6',
+                  borderRadius: 6,
+                }
+              }}
+            />
+
+            <Grid container spacing={4} sx={{ textAlign: 'center' }}>
+              <Grid item xs={4}>
+                <Typography variant="h4" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                  fontWeight: 700
+                }}>
+                  12
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                }}>
+                  Days
+                </Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="h4" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                  fontWeight: 700
+                }}>
+                  -3.2
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                }}>
+                  lbs change
+                </Typography>
+              </Grid>
+              <Grid item xs={4}>
+                <Typography variant="h4" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                  fontWeight: 700
+                }}>
+                  75%
+                </Typography>
+                <Typography variant="body2" sx={{ 
+                  color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                }}>
+                  Goal Progress
+                </Typography>
+              </Grid>
+            </Grid>
           </MotionPaper>
         </Grid>
-        
-        {/* Weekly Progress */}
-        <Grid item xs={12} lg={4}>
+
+        {/* Today's Overview Cards - Horizontal Layout */}
+        <Grid item xs={12}>
+          <Typography variant="h6" sx={{ 
+            mb: 3,
+            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+            fontWeight: 600,
+          }}>
+            Today's Overview
+          </Typography>
+          <Grid container spacing={3}>
+            {(() => {
+              const stats = getOverviewStats();
+              return [
+                {
+                  icon: '🍽️',
+                  value: `${stats.completedMeals}/${stats.totalMeals}`,
+                  label: 'Meals Completed',
+                  color: stats.completedMeals === stats.totalMeals ? '#10B981' : '#F59E0B',
+                  bgColor: stats.completedMeals === stats.totalMeals ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
+                },
+                {
+                  icon: '🔥',
+                  value: `${stats.remainingCalories}`,
+                  label: 'Calories Remaining',
+                  color: stats.remainingCalories > 0 ? '#3B82F6' : '#10B981',
+                  bgColor: stats.remainingCalories > 0 ? 'rgba(59, 130, 246, 0.1)' : 'rgba(16, 185, 129, 0.1)'
+                },
+                {
+                  icon: '🎯',
+                  value: `${stats.dailyGoalProgress}%`,
+                  label: 'Daily Goal Progress',
+                  color: stats.dailyGoalProgress >= 100 ? '#10B981' : stats.dailyGoalProgress >= 75 ? '#F59E0B' : '#EF4444',
+                  bgColor: stats.dailyGoalProgress >= 100 ? 'rgba(16, 185, 129, 0.1)' : stats.dailyGoalProgress >= 75 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+                },
+                {
+                  icon: '❤️',
+                  value: `${stats.streak}`,
+                  label: 'Perfect Days',
+                  color: stats.streak > 7 ? '#8B5CF6' : stats.streak > 3 ? '#10B981' : '#EF4444',
+                  bgColor: stats.streak > 7 ? 'rgba(139, 92, 246, 0.1)' : stats.streak > 3 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(239, 68, 68, 0.1)'
+                }
+              ];
+            })().map((item, index) => (
+              <Grid item xs={12} sm={6} md={3} key={index}>
+                <MotionPaper
+                  variants={itemVariants}
+                  sx={{
+                    p: 3,
+                    backgroundColor: theme.palette.mode === 'dark' 
+                      ? item.bgColor 
+                      : item.bgColor,
+                    borderRadius: '12px',
+                    textAlign: 'center',
+                    border: `1px solid ${item.color}30`,
+                    height: '140px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    transition: 'transform 0.2s ease-in-out',
+                    '&:hover': {
+                      transform: 'translateY(-4px)',
+                    }
+                  }}
+                >
+                  <Box sx={{ mb: 2 }}>
+                    <span style={{ fontSize: '32px' }}>{item.icon}</span>
+                  </Box>
+                  <Typography variant="h4" sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#FFFFFF' : item.color,
+                    fontWeight: 700,
+                    mb: 1,
+                    fontSize: { xs: '1.8rem', sm: '2rem' }
+                  }}>
+                    {item.value}
+                  </Typography>
+                  <Typography variant="body2" sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                    fontSize: { xs: '0.8rem', sm: '0.875rem' }
+                  }}>
+                    {item.label}
+                  </Typography>
+                </MotionPaper>
+              </Grid>
+            ))}
+          </Grid>
+        </Grid>
+
+        {/* Today's Meals - Clean List */}
+        <Grid item xs={12}>
           <MotionPaper
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
+            variants={itemVariants}
             sx={{ 
               p: 3, 
               mb: 3,
               background: theme.palette.mode === 'dark'
                 ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
                 : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 8px 32px rgba(0,0,0,0.1)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
               borderRadius: '16px',
               backdropFilter: 'blur(10px)',
               border: theme.palette.mode === 'dark'
@@ -626,206 +909,492 @@ export default function Dashboard() {
                 : 'none',
             }}
           >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                mb: 3,
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-              }}
-            >
-              Weekly Progress
+            <Typography variant="h6" sx={{ 
+              mb: 3,
+              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+              fontWeight: 600,
+            }}>
+              Today's Meals
             </Typography>
-            {[
-              { label: 'Calories', value: calculateProgress('calories'), color: '#60A5FA' },
-              { label: 'Protein', value: calculateProgress('protein'), color: '#34D399' },
-              { label: 'Carbs', value: calculateProgress('carbs'), color: '#FBBF24' },
-              { label: 'Fat', value: calculateProgress('fat'), color: '#F87171' }
-            ].map((item, index) => (
-              <MotionBox
-                key={item.label}
-                variants={itemVariants}
-                sx={{ mb: 3 }}
-              >
-                <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#718096',
-                      fontWeight: 500
-                    }}
-                  >
-                    {item.label}
-                  </Typography>
-                  <Typography 
-                    variant="body2" 
-                    sx={{ 
-                      color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#718096',
-                      fontWeight: 500
-                    }}
-                  >
-                    {item.value}%
-                  </Typography>
-                </Box>
-                <LinearProgress 
-                  variant="determinate" 
-                  value={item.value} 
-                  sx={{ 
-                    height: 8, 
-                    borderRadius: 4,
-                    bgcolor: theme.palette.mode === 'dark' 
-                      ? `${item.color}20`
-                      : `${item.color}40`,
-                    '& .MuiLinearProgress-bar': {
-                      bgcolor: item.color,
-                      transition: 'width 1s ease-in-out'
-                    }
-                  }}
-                />
-              </MotionBox>
-            ))}
-          </MotionPaper>
-
-          {/* Recent Achievements */}
-          <MotionPaper
-            variants={containerVariants}
-            initial="hidden"
-            animate="visible"
-            sx={{ 
-              p: 3,
-              background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: theme.palette.mode === 'dark'
-                ? '0 8px 32px rgba(0,0,0,0.4)'
-                : '0 8px 32px rgba(0,0,0,0.1)',
-              borderRadius: '16px',
-              backdropFilter: 'blur(10px)',
-              border: theme.palette.mode === 'dark'
-                ? '1px solid rgba(255,255,255,0.1)'
-                : 'none',
-            }}
-          >
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                mb: 3,
-                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-                fontSize: '1.25rem',
-                fontWeight: 600,
-              }}
-            >
-              Recent Achievements
-            </Typography>
-            <List>
-              {achievements
-                .filter((a: Achievement) => a.unlocked)
-                .sort((a: Achievement, b: Achievement) => 
-                  new Date(b.unlockedAt!).getTime() - new Date(a.unlockedAt!).getTime()
-                )
-                .slice(0, 3)
-                .map((achievement: Achievement, index: number) => (
-                  <MotionListItem
-                    key={achievement.id}
-                    variants={itemVariants}
+            <Grid container spacing={2}>
+              {getTodaysMeals().map((meal, index) => (
+                <Grid item xs={12} key={index}>
+                  <Box
                     sx={{
+                      p: 3,
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? 'rgba(16, 185, 129, 0.1)' 
+                        : 'rgba(16, 185, 129, 0.1)',
                       borderRadius: '12px',
-                      mb: 2,
-                      background: theme.palette.mode === 'dark'
-                        ? 'rgba(255,255,255,0.05)'
-                        : 'rgba(255,255,255,0.8)',
-                      boxShadow: theme.palette.mode === 'dark'
-                        ? '0 4px 20px rgba(0,0,0,0.4)'
-                        : '0 4px 12px rgba(0,0,0,0.05)',
                       border: theme.palette.mode === 'dark'
-                        ? '1px solid rgba(255,255,255,0.1)'
-                        : 'none',
-                      transition: 'all 0.3s ease',
+                        ? `1px solid ${meal.color}40`
+                        : `1px solid ${meal.color}30`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      transition: 'all 0.2s ease-in-out',
                       '&:hover': {
-                        transform: 'translateX(5px)',
-                        boxShadow: theme.palette.mode === 'dark'
-                          ? '0 8px 25px rgba(0,0,0,0.5)'
-                          : '0 6px 16px rgba(0,0,0,0.1)'
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? 'rgba(16, 185, 129, 0.15)' 
+                          : 'rgba(16, 185, 129, 0.15)',
                       }
                     }}
                   >
-                    <ListItemIcon>
-                      <Avatar 
-                        sx={{ 
-                          bgcolor: theme.palette.mode === 'dark'
-                            ? 'rgba(96, 165, 250, 0.2)'
-                            : 'primary.light',
-                          color: theme.palette.mode === 'dark'
-                            ? '#60A5FA'
-                            : 'primary.main',
-                          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    <Box sx={{ mr: 2 }}>
+                      <Box
+                        sx={{
+                          width: 24,
+                          height: 24,
+                          borderRadius: '50%',
+                          backgroundColor: meal.color,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          cursor: 'pointer',
+                          transition: 'transform 0.2s ease-in-out',
+                          '&:hover': {
+                            transform: 'scale(1.1)',
+                          }
+                        }}
+                        onClick={() => {
+                          const mealType = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner';
+                          handleMealToggle(mealType);
                         }}
                       >
-                        <EmojiEventsIcon />
-                      </Avatar>
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Typography 
-                            variant="subtitle1" 
+                        <span style={{ 
+                          color: 'white', 
+                          fontSize: '14px',
+                          opacity: meal.completed ? 1 : 0.5
+                        }}>
+                          {meal.completed ? '✓' : '○'}
+                        </span>
+                      </Box>
+                    </Box>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 0.5 }}>
+                        <Typography variant="h6" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                          fontWeight: 600,
+                          mr: 2
+                        }}>
+                          {meal.name}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                        }}>
+                          {meal.time}
+                        </Typography>
+                      </Box>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#4B5563',
+                        mb: 0.5
+                      }}>
+                        {meal.description}
+                      </Typography>
+                    </Box>
+                    <Box sx={{ textAlign: 'right', display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <Chip
+                        label={`${meal.calories} cal`}
+                        sx={{
+                          backgroundColor: `${meal.color}20`,
+                          color: meal.color,
+                          fontWeight: 600,
+                        }}
+                      />
+                      {meal.completed && (
+                        <Chip
+                          label="Completed"
+                          size="small"
+                          sx={{
+                            backgroundColor: '#10B981',
+                            color: 'white',
+                            fontSize: '0.7rem',
+                            height: '20px'
+                          }}
+                        />
+                      )}
+                    </Box>
+                  </Box>
+                </Grid>
+              ))}
+            </Grid>
+            
+            {/* Meal Summary */}
+            <Box sx={{ 
+              mt: 3, 
+              p: 2, 
+              backgroundColor: theme.palette.mode === 'dark' 
+                ? 'rgba(16, 185, 129, 0.1)' 
+                : 'rgba(16, 185, 129, 0.05)',
+              borderRadius: '12px',
+              border: '1px solid rgba(16, 185, 129, 0.2)'
+            }}>
+              {(() => {
+                const stats = getOverviewStats();
+                const meals = getTodaysMeals();
+                const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+                const completedCalories = meals
+                  .filter(meal => meal.completed)
+                  .reduce((sum, meal) => sum + meal.calories, 0);
+                
+                return (
+                  <>
+                    <Typography variant="h6" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                      fontWeight: 600,
+                      mb: 2,
+                      textAlign: 'center'
+                    }}>
+                      🍽️ Today's Meal Summary
+                    </Typography>
+                    <Grid container spacing={3} sx={{ textAlign: 'center' }}>
+                      <Grid item xs={3}>
+                        <Typography variant="h4" sx={{ 
+                          color: '#10B981',
+                          fontWeight: 700
+                        }}>
+                          {stats.completedMeals}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                        }}>
+                          Completed
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="h4" sx={{ 
+                          color: '#3B82F6',
+                          fontWeight: 700
+                        }}>
+                          {completedCalories}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                        }}>
+                          Calories Eaten
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="h4" sx={{ 
+                          color: stats.remainingCalories > 0 ? '#F59E0B' : '#10B981',
+                          fontWeight: 700
+                        }}>
+                          {stats.remainingCalories}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                        }}>
+                          Remaining
+                        </Typography>
+                      </Grid>
+                      <Grid item xs={3}>
+                        <Typography variant="h4" sx={{ 
+                          color: '#8B5CF6',
+                          fontWeight: 700
+                        }}>
+                          {totalCalories}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                        }}>
+                          Total Planned
+                        </Typography>
+                      </Grid>
+                    </Grid>
+                  </>
+                );
+              })()
+              }
+            </Box>
+            
+            {/* Today's Progress Section */}
+            <Box sx={{ mt: 4 }}>
+              <Typography variant="h6" sx={{ 
+                mb: 3,
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                fontWeight: 600,
+              }}>
+                Today's Progress
+              </Typography>
+              <Grid container spacing={3}>
+                <Grid item xs={12} md={8}>
+                  <Grid container spacing={3}>
+                    {[
+                      { name: 'Calories', value: 28, color: '#3B82F6' },
+                      { name: 'Protein', value: 23, color: '#10B981' },
+                      { name: 'Carbs', value: 20, color: '#F59E0B' },
+                      { name: 'Fat', value: 36, color: '#EF4444' }
+                    ].map((nutrient, index) => (
+                      <Grid item xs={12} key={index}>
+                        <Box sx={{ mb: 2 }}>
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                              fontWeight: 500
+                            }}>
+                              {nutrient.name}
+                            </Typography>
+                            <Typography variant="body2" sx={{ 
+                              color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
+                            }}>
+                              {nutrient.value}%
+                            </Typography>
+                          </Box>
+                          <LinearProgress 
+                            variant="determinate" 
+                            value={nutrient.value} 
                             sx={{ 
-                              color: theme.palette.mode === 'dark' ? '#F3F4F6' : '#2D3748',
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            {achievement.title}
-                          </Typography>
-                          <Chip
-                            size="small"
-                            label={achievement.rarity}
-                            sx={{ 
-                              bgcolor: theme.palette.mode === 'dark'
-                                ? 'rgba(96, 165, 250, 0.2)'
-                                : 'primary.light',
-                              color: theme.palette.mode === 'dark'
-                                ? '#60A5FA'
-                                : 'primary.main',
-                              textTransform: 'capitalize',
-                              fontWeight: 'bold',
-                              border: theme.palette.mode === 'dark'
-                                ? '1px solid rgba(96, 165, 250, 0.2)'
-                                : 'none',
+                              height: 8, 
+                              borderRadius: 4,
+                              bgcolor: theme.palette.mode === 'dark' 
+                                ? 'rgba(255,255,255,0.1)'
+                                : 'rgba(0,0,0,0.1)',
+                              '& .MuiLinearProgress-bar': {
+                                bgcolor: nutrient.color,
+                                borderRadius: 4,
+                              }
                             }}
                           />
+                          {nutrient.name === 'Protein' && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                              <Typography variant="caption" sx={{ 
+                                color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                                fontSize: '0.75rem',
+                                mr: 1
+                              }}>
+                                🎚️ Ratio: 30%
+                              </Typography>
+                              <Box sx={{ 
+                                width: '200px',
+                                height: '6px',
+                                backgroundColor: theme.palette.mode === 'dark' 
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : 'rgba(0,0,0,0.1)',
+                                borderRadius: '3px',
+                                position: 'relative'
+                              }}>
+                                <Box sx={{
+                                  position: 'absolute',
+                                  left: '30%',
+                                  top: '-2px',
+                                  width: '10px',
+                                  height: '10px',
+                                  backgroundColor: nutrient.color,
+                                  borderRadius: '50%',
+                                  border: '2px solid white'
+                                }} />
+                              </Box>
+                            </Box>
+                          )}
+                          {nutrient.name === 'Carbs' && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
+                              <Typography variant="caption" sx={{ 
+                                color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                                fontSize: '0.75rem',
+                                mr: 1
+                              }}>
+                                🎚️ Ratio: 45%
+                              </Typography>
+                              <Box sx={{ 
+                                width: '200px',
+                                height: '6px',
+                                backgroundColor: theme.palette.mode === 'dark' 
+                                  ? 'rgba(255,255,255,0.1)'
+                                  : 'rgba(0,0,0,0.1)',
+                                borderRadius: '3px',
+                                position: 'relative'
+                              }}>
+                                <Box sx={{
+                                  position: 'absolute',
+                                  left: '45%',
+                                  top: '-2px',
+                                  width: '10px',
+                                  height: '10px',
+                                  backgroundColor: nutrient.color,
+                                  borderRadius: '50%',
+                                  border: '2px solid white'
+                                }} />
+                              </Box>
+                            </Box>
+                          )}
                         </Box>
-                      }
-                      secondary={
-                        <>
-                          <Typography 
-                            variant="body2" 
-                            sx={{ 
-                              color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#718096'
-                            }}
-                          >
-                            {achievement.description}
-                          </Typography>
-                          <Typography 
-                            variant="caption" 
-                            sx={{ 
-                              color: theme.palette.mode === 'dark' ? '#34D399' : 'success.main',
-                              display: 'block',
-                              mt: 1,
-                              fontWeight: 'bold'
-                            }}
-                          >
-                            Unlocked {format(new Date(achievement.unlockedAt!), 'MMM d, yyyy')}
-                          </Typography>
-                        </>
-                      }
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Grid>
+                <Grid item xs={12} md={4}>
+                  <Box
+                    sx={{
+                      backgroundColor: theme.palette.mode === 'dark' 
+                        ? 'rgba(59, 130, 246, 0.1)' 
+                        : 'rgba(59, 130, 246, 0.1)',
+                      borderRadius: '12px',
+                      p: 3,
+                      border: theme.palette.mode === 'dark'
+                        ? '1px solid rgba(59, 130, 246, 0.3)'
+                        : '1px solid rgba(59, 130, 246, 0.2)',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <span style={{ fontSize: '20px', marginRight: '8px' }}>💧</span>
+                      <Typography variant="h6" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                        fontWeight: 600
+                      }}>
+                        Water Calculator
+                      </Typography>
+                    </Box>
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                        mb: 1
+                      }}>
+                        Daily Water Intake
+                      </Typography>
+                      <Box sx={{ 
+                        backgroundColor: theme.palette.mode === 'dark' 
+                          ? 'rgba(59, 130, 246, 0.1)' 
+                          : 'rgba(59, 130, 246, 0.05)',
+                        borderRadius: '8px',
+                        p: 2,
+                        border: '1px solid rgba(59, 130, 246, 0.2)'
+                      }}>
+                        <Typography variant="body2" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                          fontWeight: 600,
+                          mb: 1
+                        }}>
+                          💡 Calculation:
+                        </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                          display: 'block',
+                          mb: 0.5
+                        }}>
+                          Base: {userWeight}kg × 35ml = {userWeight * 35}ml
+                        </Typography>
+                        <Typography variant="caption" sx={{ 
+                          color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                          display: 'block',
+                          mb: 0.5
+                        }}>
+                          Activity ({user?.userData?.activity_level || 'sedentary'}): ×{getActivityMultiplier()}
+                        </Typography>
+                        <Typography variant="body2" sx={{ 
+                          color: '#3B82F6',
+                          fontWeight: 700
+                        }}>
+                          ➡️ Total: {getCurrentTarget()}ml ({Math.round(getCurrentTarget() / 250)} glasses)
+                        </Typography>
+                      </Box>
+                    </Box>
+                    <LinearProgress 
+                      variant="determinate" 
+                      value={(waterIntake.current / waterIntake.target) * 100} 
+                      sx={{ 
+                        height: 8, 
+                        borderRadius: 4,
+                        mb: 2,
+                        bgcolor: theme.palette.mode === 'dark' 
+                          ? 'rgba(59, 130, 246, 0.2)'
+                          : 'rgba(59, 130, 246, 0.3)',
+                        '& .MuiLinearProgress-bar': {
+                          bgcolor: '#3B82F6',
+                          borderRadius: 4,
+                        }
+                      }}
                     />
-                  </MotionListItem>
-                ))}
-            </List>
+                    <Typography variant="body2" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                      textAlign: 'right',
+                      mb: 2
+                    }}>
+                      {waterIntake.current}ml / {waterIntake.target}ml ({Math.round(waterIntake.current / 250)} glasses)
+                    </Typography>
+                    <Typography variant="body2" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                      mb: 2
+                    }}>
+                      Your Weight (kg)
+                    </Typography>
+                    <Box sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 1,
+                      mb: 2
+                    }}>
+                      <TextField
+                        size="small"
+                        type="number"
+                        value={userWeight}
+                        onChange={(e) => setUserWeight(Number(e.target.value))}
+                        InputProps={{
+                          endAdornment: <InputAdornment position="end">kg</InputAdornment>,
+                        }}
+                        sx={{
+                          flexGrow: 1,
+                          '& .MuiOutlinedInput-root': {
+                            backgroundColor: theme.palette.mode === 'dark' 
+                              ? 'rgba(75, 85, 99, 0.5)' 
+                              : 'rgba(229, 231, 235, 0.8)',
+                            '& fieldset': {
+                              borderColor: 'transparent',
+                            },
+                            '&:hover fieldset': {
+                              borderColor: '#3B82F6',
+                            },
+                            '&.Mui-focused fieldset': {
+                              borderColor: '#3B82F6',
+                            },
+                          },
+                          '& .MuiInputBase-input': {
+                            textAlign: 'center',
+                            color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                            fontWeight: 600,
+                          }
+                        }}
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={calculateWaterIntake}
+                        sx={{
+                          backgroundColor: '#3B82F6',
+                          color: 'white',
+                          '&:hover': {
+                            backgroundColor: '#2563EB',
+                          }
+                        }}
+                      >
+                        🧮 Set Target to {getCurrentTarget()}ml
+                      </Button>
+                      <Button
+                        variant="outlined"
+                        onClick={addWaterGlass}
+                        sx={{
+                          minWidth: 'auto',
+                          px: 2,
+                          borderColor: '#3B82F6',
+                          color: '#3B82F6',
+                          '&:hover': {
+                            borderColor: '#2563EB',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)'
+                          }
+                        }}
+                      >
+                        💧 +Glass
+                      </Button>
+                    </Box>
+                  </Box>
+                </Grid>
+              </Grid>
+            </Box>
           </MotionPaper>
         </Grid>
       </Grid>
-    </Box>
+    </MotionBox>
   );
-} 
+};
+
+export default Dashboard;

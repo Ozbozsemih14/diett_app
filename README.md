@@ -1,11 +1,11 @@
-# AI Diet Assistant
+# SemiHealth - AI Diet Assistant
 
-Transform your health journey with a full-stack AI-powered diet and nutrition assistant. This project leverages modern web technologies and local LLMs to deliver personalized meal plans, nutrition analysis, and smart recommendations, all in a beautiful, user-friendly interface.
+Transform your health journey with SemiHealth, a full-stack AI-powered diet and nutrition assistant. This project leverages modern web technologies and local LLMs to deliver personalized meal plans, nutrition analysis, and smart recommendations, all in a beautiful, user-friendly interface.
 
 ---
 
 ## 🚀 Project Overview
-AI Diet Assistant is a full-stack application that helps users:
+SemiHealth is a full-stack application that helps users:
 - Generate personalized diet plans based on their profile, restrictions, and health goals
 - Get AI-powered meal suggestions and explanations (using local LLM via LM Studio)
 - Find nearby healthy restaurants and grocery stores (Google Places API)
@@ -60,13 +60,37 @@ AI Diet Assistant is a full-stack application that helps users:
 ---
 
 ## ✨ Features
+
+### 🍽️ **Nutrition & Diet**
 - **User Profile Management**: Age, gender, weight, height, activity, restrictions, health conditions
 - **Personalized Diet Generation**: Smart meal plans tailored to user needs
 - **AI Meal Suggestions**: Detailed, context-aware meal ideas from a local LLM
 - **Nutrition Analysis**: Macro/micro breakdown for each plan
+- **Dynamic Macro Ratio Control**: Adjust protein/carbs/fat ratios with interactive sliders (10-60% range)
+- **Intelligent Water Calculator**: Personalized daily water intake recommendations based on body weight and activity level
+
+### 🏋️‍♂️ **Fitness & Workouts** *(New in v1.2.0)*
+- **Complete Workouts Section**: Dedicated fitness page with comprehensive workout management
+- **Exercise Library**: 4 main categories (Cardio, Strength, HIIT, Yoga) with exercise examples
+- **Today's Workout Overview**: Current workout plan with progress tracking
+- **Workout History**: Complete log of past workouts with detailed metrics
+- **Weekly Fitness Stats**: Comprehensive analytics (total workouts, duration, calories, averages)
+- **Quick Workout Logger**: Easy-to-use form for manual workout entry
+- **Fitness-Diet Integration**: Post-workout nutrition suggestions and calorie adjustments
+
+### 🌍 **Location & Discovery**
 - **Nearby Restaurants & Stores**: Find healthy options near you (Google Places API)
+
+### 📊 **Progress & Gamification**
 - **Progress Tracking & Achievements**: Visualize and celebrate your health journey
+- **Real-time Dashboard**: Combined nutrition and fitness overview
+- **Interactive Charts**: Visual progress representation with smooth animations
+
+### 🎨 **User Experience**
 - **Modern UI/UX**: Responsive, clean React interface with Material UI
+- **Dark/Light Theme**: Toggle between themes with consistent design language
+- **Motion Animations**: Smooth transitions and hover effects throughout the app
+- **Mobile-First Design**: Fully responsive across all device sizes
 
 ---
 
@@ -138,6 +162,40 @@ npm start
 - Sign up or log in (UI only, no real authentication)
 - Enter your profile details and generate a personalized diet plan
 - Explore meal suggestions, nutrition breakdown, and local healthy options
+- **🆕 Adjust macro ratios** using the sliders in Today's Progress section
+- **🆕 Calculate optimal water intake** using the Water Calculator
+
+---
+
+## 🆕 Recent Updates (August 2025)
+
+### Enhanced Dashboard Features
+We've significantly improved the user experience with two major additions:
+
+#### 1. 🎛️ Dynamic Macro Ratio Control
+- **Interactive Sliders**: Fine-tune your protein, carbs, and fat ratios directly from the dashboard
+- **Real-time Updates**: Progress bars automatically recalculate based on your preferred macro distribution
+- **Smart Balancing**: When you adjust one macro, the others automatically rebalance to maintain 100%
+- **Range Control**: Adjust each macro between 10-60% to suit your dietary preferences
+- **Visual Feedback**: Immediate visual feedback with color-coded sliders matching each nutrient
+
+#### 2. 💧 Intelligent Water Calculator
+- **Personalized Recommendations**: Get daily water intake suggestions based on your exact body weight
+- **Activity Level Adjustment**: Automatically factors in your activity level for more accurate recommendations
+- **Easy Input**: Simple weight input with automatic calculation
+- **Visual Progress**: Track your daily water intake with a dedicated progress bar
+- **Practical Conversion**: Shows recommendations in both milliliters and standard glasses (250ml each)
+- **Scientific Formula**: Uses the proven 35ml per kg body weight baseline with activity multipliers
+
+### Technical Improvements
+- **Preserved Design System**: All new features seamlessly integrate with the existing dark theme and Material-UI components
+- **Responsive Layout**: New components are fully responsive and maintain the app's mobile-friendly design
+- **Performance Optimized**: Real-time calculations with minimal performance impact
+- **Type Safety**: Full TypeScript support for all new features
+
+### How to Use New Features
+1. **Macro Adjustment**: Navigate to Dashboard → Today's Progress → Use sliders under each nutrient bar
+2. **Water Calculator**: Navigate to Dashboard → Water Calculator section → Enter weight → Click "Calculate Recommended Intake"
 
 ---
 
@@ -169,6 +227,69 @@ npm start
 - [Phi 3.1 Mini](https://huggingface.co/microsoft/Phi-3-mini-128k-instruct) for the model
 - [Material UI](https://mui.com/) for UI components
 - [Google Places API](https://developers.google.com/maps/documentation/places/web-service/overview)
+
+---
+
+## 📅 Changelog
+
+### Version 1.2.0 (August 23, 2025)
+**🏋️‍♂️ Major Feature: Fitness Integration**
+- ✅ **Complete Workouts Section**: New dedicated fitness page accessible from sidebar
+- ✅ **Today's Workout Card**: Exercise type, duration, calories burned with progress ring
+- ✅ **Exercise Library**: 4 categories (Cardio, Strength, HIIT, Yoga) with details and examples
+- ✅ **Workout History**: Complete log of past workouts with date, type, duration, calories
+- ✅ **Weekly Fitness Stats**: Total workouts, duration, calories, and averages
+- ✅ **Quick Workout Logger**: Dialog form for manual workout entry
+- ✅ **Fitness-Diet Integration**: Post-workout nutrition suggestions and bonus calorie display
+
+**🎨 UI/UX Improvements:**
+- Enhanced Dashboard with workout + nutrition cards side-by-side
+- Consistent design language across fitness components
+- Motion animations and hover effects for better user experience
+- Color-coded exercise categories with gradient backgrounds
+
+**🔧 Technical Improvements:**
+- New `/workouts` route with full navigation integration
+- Updated Navigation component to support fitness section
+- Responsive grid layouts optimized for both mobile and desktop
+- TypeScript interfaces for workout data structures
+
+**📍 File Changes:**
+- `src/frontend/diet-assistant-ui/src/components/Workouts.tsx` - New component
+- `src/frontend/diet-assistant-ui/src/components/Navigation.tsx` - Updated sidebar
+- `src/frontend/diet-assistant-ui/src/components/Dashboard.tsx` - Added fitness cards
+- `src/frontend/diet-assistant-ui/src/App.tsx` - Added routing and imports
+
+**⚠️ Current Limitations:**
+- Workout data is currently mock/static (no persistent storage)
+- No backend integration for workout logging
+- Progress tracking uses sample data only
+
+### Version 1.1.0 (August 21, 2025)
+**🆕 New Features:**
+- ✅ Dynamic Macro Ratio Control with interactive sliders
+- ✅ Intelligent Water Calculator with personalized recommendations
+- ✅ Real-time progress bar updates based on macro adjustments
+- ✅ Activity level integration for water intake calculations
+
+**🔧 Technical Improvements:**
+- Enhanced Dashboard component with new state management
+- Added TypeScript support for macro ratio calculations
+- Improved responsive design for new components
+- Maintained existing dark theme consistency
+
+**📍 File Changes:**
+- `src/frontend/diet-assistant-ui/src/components/Dashboard.tsx` - Major updates
+- `README.md` - Documentation updates
+
+### Version 1.0.0 (Initial Release)
+**🚀 Core Features:**
+- AI Diet Assistant with LM Studio integration
+- User profile management
+- Personalized diet generation
+- Progress tracking and achievements
+- Restaurant and store finder
+- Modern React UI with Material-UI
 
 ---
 

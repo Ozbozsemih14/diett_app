@@ -43,11 +43,13 @@ const MotionPaper = motion(Paper);
 
 interface DailyProgress {
   date: string;
-  calories: number;
-  protein: number;
-  carbs: number;
-  fat: number;
-  water: number;
+  consumed: {
+    calories: number;
+    protein: number;
+    carbs: number;
+    fat: number;
+    water: number;
+  };
   meals: {
     breakfast: boolean;
     lunch: boolean;
@@ -58,11 +60,13 @@ interface DailyProgress {
 
 const sampleProgress: DailyProgress[] = Array.from({ length: 7 }, (_, i) => ({
   date: format(subDays(new Date(), i), 'MMM dd'),
-  calories: Math.floor(Math.random() * 500) + 1500,
-  protein: Math.floor(Math.random() * 30) + 70,
-  carbs: Math.floor(Math.random() * 50) + 150,
-  fat: Math.floor(Math.random() * 20) + 40,
-  water: Math.floor(Math.random() * 2) + 6,
+  consumed: {
+    calories: Math.floor(Math.random() * 500) + 1500,
+    protein: Math.floor(Math.random() * 30) + 70,
+    carbs: Math.floor(Math.random() * 50) + 150,
+    fat: Math.floor(Math.random() * 20) + 40,
+    water: Math.floor(Math.random() * 2) + 6,
+  },
   meals: {
     breakfast: Math.random() > 0.2,
     lunch: Math.random() > 0.1,
@@ -100,11 +104,13 @@ export default function Progress() {
     const date = format(subDays(new Date(), i), 'yyyy-MM-dd');
     const dayProgress = mealProgress.find(p => p.date === date) || {
       date,
-      calories: 0,
-      protein: 0,
-      carbs: 0,
-      fat: 0,
-      water: 0,
+      consumed: {
+        calories: 0,
+        protein: 0,
+        carbs: 0,
+        fat: 0,
+        water: 0
+      },
       meals: {
         breakfast: false,
         lunch: false,
@@ -129,10 +135,10 @@ export default function Progress() {
 
   // Calculate weekly stats
   const weeklyStats = {
-    avgCalories: Math.round(last7Days.reduce((acc, day) => acc + day.calories, 0) / 7),
-    avgProtein: Math.round(last7Days.reduce((acc, day) => acc + day.protein, 0) / 7),
-    avgCarbs: Math.round(last7Days.reduce((acc, day) => acc + day.carbs, 0) / 7),
-    avgFat: Math.round(last7Days.reduce((acc, day) => acc + day.fat, 0) / 7),
+    avgCalories: Math.round(last7Days.reduce((acc, day) => acc + day.consumed.calories, 0) / 7),
+    avgProtein: Math.round(last7Days.reduce((acc, day) => acc + day.consumed.protein, 0) / 7),
+    avgCarbs: Math.round(last7Days.reduce((acc, day) => acc + day.consumed.carbs, 0) / 7),
+    avgFat: Math.round(last7Days.reduce((acc, day) => acc + day.consumed.fat, 0) / 7),
     completedMeals: last7Days.reduce((acc, day) => 
       acc + Object.values(day.meals).filter(Boolean).length, 0
     ),
@@ -209,7 +215,7 @@ export default function Progress() {
             {
               icon: <WaterDropIcon />,
               label: 'Hydration',
-              value: `${Math.round((last7Days.reduce((acc, day) => acc + day.water, 0) / 7) / 1000)}L`,
+              value: `${Math.round((last7Days.reduce((acc, day) => acc + day.consumed.water, 0) / 7) / 1000)}L`,
               target: 2,
               color: '#60A5FA'
             }
@@ -316,13 +322,13 @@ export default function Progress() {
                         <Box sx={{ flex: 1 }}>
                           <LinearProgress 
                             variant="determinate" 
-                            value={(day.calories / (userData?.calorieGoal || 2000)) * 100}
-                            color={getProgressColor(day.calories, userData?.calorieGoal || 2000)}
+                            value={Math.min((day.consumed.calories / (userData?.calorieGoal || 2000)) * 100, 100)}
+                            color={getProgressColor(day.consumed.calories, userData?.calorieGoal || 2000)}
                             sx={{ height: 8, borderRadius: 4 }}
                           />
                         </Box>
                         <Typography variant="body2" color="text.secondary">
-                          {day.calories}/{userData?.calorieGoal || 2000}
+                          {day.consumed.calories}/{userData?.calorieGoal || 2000}
                         </Typography>
                       </Box>
                     </Box>
@@ -336,9 +342,9 @@ export default function Progress() {
                     </Typography>
                     <Grid container spacing={2}>
                       {[
-                        { label: 'Protein', value: day.protein, target: userData?.proteinGoal || 150, unit: 'g' },
-                        { label: 'Carbs', value: day.carbs, target: userData?.carbsGoal || 250, unit: 'g' },
-                        { label: 'Fat', value: day.fat, target: userData?.fatGoal || 70, unit: 'g' }
+                        { label: 'Protein', value: day.consumed.protein, target: userData?.proteinGoal || 150, unit: 'g' },
+                        { label: 'Carbs', value: day.consumed.carbs, target: userData?.carbsGoal || 250, unit: 'g' },
+                        { label: 'Fat', value: day.consumed.fat, target: userData?.fatGoal || 70, unit: 'g' }
                       ].map((nutrient, idx) => (
                         <Grid item xs={12} sm={4} key={idx}>
                           <Box sx={{ textAlign: 'center' }}>
@@ -348,7 +354,7 @@ export default function Progress() {
                             <Box sx={{ position: 'relative', display: 'inline-flex', mt: 1 }}>
                               <CircularProgress
                                 variant="determinate"
-                                value={(nutrient.value / nutrient.target) * 100}
+                                value={Math.min((nutrient.value / nutrient.target) * 100, 100)}
                                 color={getProgressColor(nutrient.value, nutrient.target)}
                                 size={60}
                               />

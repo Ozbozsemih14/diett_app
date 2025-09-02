@@ -14,6 +14,8 @@ import DietPlanView from './components/DietPlan';
 import Dashboard from './components/Dashboard';
 import Progress from './components/Progress';
 import Achievements from './components/Achievements';
+import Workouts from './components/Workouts';
+import NutritionTips from './components/NutritionTips';
 import LoadingAnimation from './components/LoadingAnimation';
 import { lightTheme, darkTheme } from './theme';
 import { generateDietPlan } from './api/mockApi';
@@ -67,24 +69,32 @@ function ThemedApp() {
   // Fetch diet plan when user data is available
   useEffect(() => {
     const generatePlan = async () => {
+      console.log('generatePlan called with user:', user);
       // Don't proceed if user or userData is not available
       if (!user || !user.userData) {
+        console.log('No user or userData available:', { user, userData: user?.userData });
         setIsLoading(false);
         return;
       }
 
+      console.log('Starting diet plan generation with userData:', user.userData);
       setIsLoading(true);
       try {
+        console.log('Calling generateDietPlan...');
         const dietPlanData = await generateDietPlan(user.userData);
+        console.log('Diet plan generated successfully:', dietPlanData);
+        
         if (!dietPlanData || !dietPlanData.meals || !dietPlanData.nutrition || !dietPlanData.shoppingList) {
-          throw new Error('Invalid diet plan data received');
+          throw new Error('Invalid diet plan data received: missing required fields');
         }
         setDietPlan(dietPlanData);
+        console.log('Diet plan set successfully');
       } catch (err) {
         console.error('Error generating diet plan:', err);
         setError(err instanceof Error ? err.message : 'Failed to generate diet plan');
       } finally {
         setIsLoading(false);
+        console.log('Diet plan generation completed');
       }
     };
 
@@ -98,6 +108,8 @@ function ThemedApp() {
     if (path === '/plan') return 'plan';
     if (path === '/progress') return 'progress';
     if (path === '/achievements') return 'achievements';
+    if (path === '/workouts') return 'workouts';
+    if (path === '/tips') return 'tips';
     return 'dashboard';
   };
   
@@ -169,6 +181,22 @@ function ThemedApp() {
               element={
                 <ProtectedRoute>
                   <Achievements />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/workouts" 
+              element={
+                <ProtectedRoute>
+                  <Workouts />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/tips" 
+              element={
+                <ProtectedRoute>
+                  <NutritionTips />
                 </ProtectedRoute>
               } 
             />

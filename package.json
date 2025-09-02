@@ -14,10 +14,12 @@
     "axios": "^1.6.7"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "cd src/frontend/diet-assistant-ui && npm start",
+    "build": "cd src/frontend/diet-assistant-ui && npm run build",
+    "build:frontend": "cd src/frontend/diet-assistant-ui && npm run build",
+    "install:frontend": "cd src/frontend/diet-assistant-ui && npm install",
+    "dev": "concurrently \"python3 simple_server.py\" \"cd src/frontend/diet-assistant-ui && npm start\"",
+    "test": "cd src/frontend/diet-assistant-ui && npm test"
   },
   "eslintConfig": {
     "extends": [
