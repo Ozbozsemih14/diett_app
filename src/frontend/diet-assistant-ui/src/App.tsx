@@ -7,6 +7,7 @@ import Box from '@mui/material/Box';
 import { UserProvider, useUser } from './contexts/UserContext';
 import { ProgressProvider } from './contexts/ProgressContext';
 import { NotificationProvider } from './contexts/NotificationContext';
+import { DietPlanProvider } from './contexts/DietPlanContext';
 import Navigation from './components/Navigation';
 import AuthPage from './components/Auth/AuthPage';
 import UserForm from './components/UserForm';
@@ -230,10 +231,12 @@ function App() {
       <UserProvider>
         <ProgressProvider>
           <NotificationProvider>
-            <Routes>
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/*" element={<ThemedApp />} />
-            </Routes>
+            <DietPlanProvider>
+              <Routes>
+                <Route path="/auth" element={<AuthPage />} />
+                <Route path="/*" element={<ThemedApp />} />
+              </Routes>
+            </DietPlanProvider>
           </NotificationProvider>
         </ProgressProvider>
       </UserProvider>

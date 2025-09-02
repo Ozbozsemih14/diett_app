@@ -16,6 +16,7 @@ import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import { useUser } from '../contexts/UserContext';
 import { useProgress } from '../contexts/ProgressContext';
+import { useDietPlan } from '../contexts/DietPlanContext';
 
 // Motion components
 const MotionBox = motion(Box);
@@ -25,6 +26,7 @@ const Dashboard: React.FC = () => {
   const theme = useTheme();
   const { user } = useUser();
   const { mealProgress, selectedMeals, toggleMealCompletion } = useProgress();
+  const { currentPlan, getTodaysMeals, generateNewPlan, regenerateTodaysMeals, isLoading } = useDietPlan();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [foodCategories, setFoodCategories] = useState<{
     [key: string]: { current: number; total: number; unit: string; }
@@ -141,36 +143,70 @@ const Dashboard: React.FC = () => {
   };
 
   // Get today's meals from selected meals or mock data
-  const getTodaysMeals = () => {
+  const getTodaysMealsData = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayProgress = mealProgress.find(p => p.date === today);
     
-    return [
-      {
-        name: 'Breakfast',
-        time: '8:00 AM',
-        description: selectedMeals.breakfast?.name || 'Oatmeal with berries, Greek yogurt, Almonds',
-        calories: selectedMeals.breakfast?.calories || 350,
-        completed: todayProgress?.meals.breakfast || false,
-        color: todayProgress?.meals.breakfast ? '#10B981' : '#9CA3AF'
-      },
-      {
-        name: 'Lunch', 
-        time: '1:00 PM',
-        description: selectedMeals.lunch?.name || 'Grilled chicken salad, Quinoa, Avocado',
-        calories: selectedMeals.lunch?.calories || 520,
-        completed: todayProgress?.meals.lunch || false,
-        color: todayProgress?.meals.lunch ? '#10B981' : '#9CA3AF'
-      },
-      {
-        name: 'Dinner',
-        time: '7:00 PM', 
-        description: selectedMeals.dinner?.name || 'Salmon, Brown rice, Steamed vegetables',
-        calories: selectedMeals.dinner?.calories || 550,
-        completed: todayProgress?.meals.dinner || false,
-        color: todayProgress?.meals.dinner ? '#10B981' : '#9CA3AF'
-      }
-    ];
+    // Get meals from DietPlan context if available, otherwise use fallback data
+    const dietPlanMeals = getTodaysMeals();
+    
+    if (dietPlanMeals) {
+      // Use DietPlan context data
+      return [
+        {
+          name: 'Breakfast',
+          time: dietPlanMeals.breakfast.time,
+          description: dietPlanMeals.breakfast.name,
+          calories: dietPlanMeals.breakfast.calories,
+          completed: todayProgress?.meals.breakfast || false,
+          color: todayProgress?.meals.breakfast ? '#10B981' : '#9CA3AF'
+        },
+        {
+          name: 'Lunch', 
+          time: dietPlanMeals.lunch.time,
+          description: dietPlanMeals.lunch.name,
+          calories: dietPlanMeals.lunch.calories,
+          completed: todayProgress?.meals.lunch || false,
+          color: todayProgress?.meals.lunch ? '#10B981' : '#9CA3AF'
+        },
+        {
+          name: 'Dinner',
+          time: dietPlanMeals.dinner.time, 
+          description: dietPlanMeals.dinner.name,
+          calories: dietPlanMeals.dinner.calories,
+          completed: todayProgress?.meals.dinner || false,
+          color: todayProgress?.meals.dinner ? '#10B981' : '#9CA3AF'
+        }
+      ];
+    } else {
+      // Fallback to original data if no diet plan exists
+      return [
+        {
+          name: 'Breakfast',
+          time: '8:00 AM',
+          description: selectedMeals.breakfast?.name || 'Oatmeal with berries, Greek yogurt, Almonds',
+          calories: selectedMeals.breakfast?.calories || 350,
+          completed: todayProgress?.meals.breakfast || false,
+          color: todayProgress?.meals.breakfast ? '#10B981' : '#9CA3AF'
+        },
+        {
+          name: 'Lunch', 
+          time: '1:00 PM',
+          description: selectedMeals.lunch?.name || 'Grilled chicken salad, Quinoa, Avocado',
+          calories: selectedMeals.lunch?.calories || 520,
+          completed: todayProgress?.meals.lunch || false,
+          color: todayProgress?.meals.lunch ? '#10B981' : '#9CA3AF'
+        },
+        {
+          name: 'Dinner',
+          time: '7:00 PM', 
+          description: selectedMeals.dinner?.name || 'Salmon, Brown rice, Steamed vegetables',
+          calories: selectedMeals.dinner?.calories || 550,
+          completed: todayProgress?.meals.dinner || false,
+          color: todayProgress?.meals.dinner ? '#10B981' : '#9CA3AF'
+        }
+      ];
+    }
   };
 
   // Toggle meal completion and update overview
@@ -186,7 +222,7 @@ const Dashboard: React.FC = () => {
   const getOverviewStats = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayProgress = mealProgress.find(p => p.date === today);
-    const meals = getTodaysMeals();
+    const meals = getTodaysMealsData();
     
     // Calculate completed meals
     const completedMeals = meals.filter(meal => meal.completed).length;
@@ -909,15 +945,81 @@ const Dashboard: React.FC = () => {
                 : 'none',
             }}
           >
-            <Typography variant="h6" sx={{ 
-              mb: 3,
-              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-              fontWeight: 600,
-            }}>
-              Today's Meals
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="h6" sx={{ 
+                color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                fontWeight: 600,
+              }}>
+                Today's Meals
+                {currentPlan && (
+                  <Chip 
+                    label="Diet Plan Active" 
+                    size="small" 
+                    sx={{ 
+                      ml: 2, 
+                      backgroundColor: '#10B981', 
+                      color: 'white',
+                      fontWeight: 500
+                    }} 
+                  />
+                )}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1 }}>
+                {!currentPlan ? (
+                  <Button
+                    variant="contained"
+                    size="small"
+                    onClick={() => generateNewPlan(user?.userData)}
+                    disabled={isLoading}
+                    sx={{
+                      backgroundColor: '#10B981',
+                      '&:hover': { backgroundColor: '#0EA373' },
+                      fontSize: '0.75rem',
+                      px: 2
+                    }}
+                  >
+                    {isLoading ? <CircularProgress size={16} /> : 'Generate Plan'}
+                  </Button>
+                ) : (
+                  <>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      onClick={regenerateTodaysMeals}
+                      disabled={isLoading}
+                      sx={{
+                        borderColor: '#10B981',
+                        color: '#10B981',
+                        fontSize: '0.75rem',
+                        px: 2,
+                        '&:hover': {
+                          borderColor: '#0EA373',
+                          backgroundColor: 'rgba(16, 185, 129, 0.1)'
+                        }
+                      }}
+                    >
+                      {isLoading ? <CircularProgress size={16} /> : 'New Meals'}
+                    </Button>
+                    <Button
+                      variant="contained"
+                      size="small"
+                      onClick={() => generateNewPlan(user?.userData)}
+                      disabled={isLoading}
+                      sx={{
+                        backgroundColor: '#10B981',
+                        '&:hover': { backgroundColor: '#0EA373' },
+                        fontSize: '0.75rem',
+                        px: 2
+                      }}
+                    >
+                      {isLoading ? <CircularProgress size={16} /> : 'New Plan'}
+                    </Button>
+                  </>
+                )}
+              </Box>
+            </Box>
             <Grid container spacing={2}>
-              {getTodaysMeals().map((meal, index) => (
+              {getTodaysMealsData().map((meal, index) => (
                 <Grid item xs={12} key={index}>
                   <Box
                     sx={{
@@ -1030,7 +1132,7 @@ const Dashboard: React.FC = () => {
             }}>
               {(() => {
                 const stats = getOverviewStats();
-                const meals = getTodaysMeals();
+                const meals = getTodaysMealsData();
                 const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
                 const completedCalories = meals
                   .filter(meal => meal.completed)
