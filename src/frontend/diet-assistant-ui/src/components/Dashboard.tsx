@@ -1221,12 +1221,80 @@ const Dashboard: React.FC = () => {
               <Grid container spacing={3}>
                 <Grid item xs={12} md={8}>
                   <Grid container spacing={3}>
-                    {[
-                      { name: 'Calories', value: 28, color: '#3B82F6' },
-                      { name: 'Protein', value: 23, color: '#10B981' },
-                      { name: 'Carbs', value: 20, color: '#F59E0B' },
-                      { name: 'Fat', value: 36, color: '#EF4444' }
-                    ].map((nutrient, index) => (
+                    {(() => {
+                      const meals = getTodaysMealsData();
+                      const totalCalories = meals.reduce((sum, meal) => sum + meal.calories, 0);
+                      const completedCalories = meals
+                        .filter(meal => meal.completed)
+                        .reduce((sum, meal) => sum + meal.calories, 0);
+                      
+                      // Calculate macros from completed meals
+                      const completedMeals = meals.filter(meal => meal.completed);
+                      const totalProtein = completedMeals.reduce((sum, meal) => {
+                        // Estimate protein from Diet Plan data if available
+                        const dietPlanMeals = getTodaysMeals();
+                        if (dietPlanMeals) {
+                          const mealType = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner';
+                          return sum + (dietPlanMeals[mealType]?.protein || 0);
+                        }
+                        return sum + (meal.calories * 0.2 / 4); // Fallback: 20% calories from protein
+                      }, 0);
+                      
+                      const totalCarbs = completedMeals.reduce((sum, meal) => {
+                        const dietPlanMeals = getTodaysMeals();
+                        if (dietPlanMeals) {
+                          const mealType = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner';
+                          return sum + (dietPlanMeals[mealType]?.carbs || 0);
+                        }
+                        return sum + (meal.calories * 0.5 / 4); // Fallback: 50% calories from carbs
+                      }, 0);
+                      
+                      const totalFat = completedMeals.reduce((sum, meal) => {
+                        const dietPlanMeals = getTodaysMeals();
+                        if (dietPlanMeals) {
+                          const mealType = meal.name.toLowerCase() as 'breakfast' | 'lunch' | 'dinner';
+                          return sum + (dietPlanMeals[mealType]?.fat || 0);
+                        }
+                        return sum + (meal.calories * 0.3 / 9); // Fallback: 30% calories from fat
+                      }, 0);
+
+                      // Calculate target macros from current plan
+                      const targetCalories = currentPlan?.targetCalories || 2000;
+                      const targetProtein = targetCalories * 0.25 / 4; // 25% from protein
+                      const targetCarbs = targetCalories * 0.45 / 4;   // 45% from carbs  
+                      const targetFat = targetCalories * 0.3 / 9;      // 30% from fat
+
+                      return [
+                        { 
+                          name: 'Calories', 
+                          value: Math.min(Math.round((completedCalories / targetCalories) * 100), 100), 
+                          color: '#3B82F6',
+                          current: completedCalories,
+                          target: targetCalories
+                        },
+                        { 
+                          name: 'Protein', 
+                          value: Math.min(Math.round((totalProtein / targetProtein) * 100), 100), 
+                          color: '#10B981',
+                          current: Math.round(totalProtein),
+                          target: Math.round(targetProtein)
+                        },
+                        { 
+                          name: 'Carbs', 
+                          value: Math.min(Math.round((totalCarbs / targetCarbs) * 100), 100), 
+                          color: '#F59E0B',
+                          current: Math.round(totalCarbs),
+                          target: Math.round(targetCarbs)
+                        },
+                        { 
+                          name: 'Fat', 
+                          value: Math.min(Math.round((totalFat / targetFat) * 100), 100), 
+                          color: '#EF4444',
+                          current: Math.round(totalFat),
+                          target: Math.round(targetFat)
+                        }
+                      ];
+                    })().map((nutrient, index) => (
                       <Grid item xs={12} key={index}>
                         <Box sx={{ mb: 2 }}>
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
@@ -1239,7 +1307,7 @@ const Dashboard: React.FC = () => {
                             <Typography variant="body2" sx={{ 
                               color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
                             }}>
-                              {nutrient.value}%
+                              {nutrient.current}/{nutrient.target}{nutrient.name === 'Calories' ? ' kcal' : 'g'} ({nutrient.value}%)
                             </Typography>
                           </Box>
                           <LinearProgress 

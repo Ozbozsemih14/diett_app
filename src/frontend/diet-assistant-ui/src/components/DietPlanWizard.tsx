@@ -46,7 +46,7 @@ interface SelectedMeals {
 const DietPlanWizard: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useUser();
-  const { generateNewPlan, currentPlan, isLoading } = useDietPlan();
+  const { generatePlanFromWizard, currentPlan, isLoading } = useDietPlan();
   
   const [activeStep, setActiveStep] = useState(0);
   const [selectedMeals, setSelectedMeals] = useState<SelectedMeals>({
@@ -108,61 +108,16 @@ const DietPlanWizard: React.FC = () => {
       return;
     }
 
-    // Create custom plan with selected meals
-    const customPlan = {
-      id: `custom-plan-${Date.now()}`,
-      userId: user?.email || 'user',
-      createdAt: new Date().toISOString(),
-      targetCalories,
-      macroRatios,
-      meals: {
-        breakfast: {
-          id: selectedMeals.breakfast.id,
-          name: selectedMeals.breakfast.name,
-          time: '08:00',
-          calories: selectedMeals.breakfast.calories,
-          protein: selectedMeals.breakfast.protein,
-          carbs: selectedMeals.breakfast.carbs,
-          fat: selectedMeals.breakfast.fat,
-          ingredients: selectedMeals.breakfast.ingredients,
-          recipe: selectedMeals.breakfast.recipe
-        },
-        lunch: {
-          id: selectedMeals.lunch.id,
-          name: selectedMeals.lunch.name,
-          time: '13:00',
-          calories: selectedMeals.lunch.calories,
-          protein: selectedMeals.lunch.protein,
-          carbs: selectedMeals.lunch.carbs,
-          fat: selectedMeals.lunch.fat,
-          ingredients: selectedMeals.lunch.ingredients,
-          recipe: selectedMeals.lunch.recipe
-        },
-        dinner: {
-          id: selectedMeals.dinner.id,
-          name: selectedMeals.dinner.name,
-          time: '19:00',
-          calories: selectedMeals.dinner.calories,
-          protein: selectedMeals.dinner.protein,
-          carbs: selectedMeals.dinner.carbs,
-          fat: selectedMeals.dinner.fat,
-          ingredients: selectedMeals.dinner.ingredients,
-          recipe: selectedMeals.dinner.recipe
-        }
-      },
-      totalNutrition: {
-        calories: selectedMeals.breakfast.calories + selectedMeals.lunch.calories + selectedMeals.dinner.calories,
-        protein: selectedMeals.breakfast.protein + selectedMeals.lunch.protein + selectedMeals.dinner.protein,
-        carbs: selectedMeals.breakfast.carbs + selectedMeals.lunch.carbs + selectedMeals.dinner.carbs,
-        fat: selectedMeals.breakfast.fat + selectedMeals.lunch.fat + selectedMeals.dinner.fat
-      }
-    };
-
-    // Save to DietPlan context
-    localStorage.setItem('currentDietPlan', JSON.stringify(customPlan));
-    
-    // Navigate back to dashboard
-    navigate('/dashboard');
+    try {
+      // Use the new generatePlanFromWizard function
+      await generatePlanFromWizard(selectedMeals, targetCalories, macroRatios);
+      
+      // Navigate back to dashboard after successful plan generation
+      navigate('/dashboard');
+    } catch (error) {
+      console.error('Error saving plan:', error);
+      // Error is handled by the context
+    }
   };
 
   const renderMealSelection = (category: 'breakfast' | 'lunch' | 'dinner') => {
@@ -189,18 +144,25 @@ const DietPlanWizard: React.FC = () => {
                 }}
                 onClick={() => handleMealSelect(meal, category)}
               >
-                {/* Placeholder for meal image */}
+                {/* Gradient background with emoji */}
                 <CardMedia
                   sx={{
                     height: 160,
-                    backgroundColor: '#f5f5f5',
+                    background: meal.gradient,
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     position: 'relative'
                   }}
                 >
-                  <Restaurant sx={{ fontSize: 48, color: '#ccc' }} />
+                  <Typography
+                    sx={{
+                      fontSize: '4rem',
+                      textShadow: '0 2px 8px rgba(0,0,0,0.1)'
+                    }}
+                  >
+                    {meal.emoji}
+                  </Typography>
                   {selectedMeal?.id === meal.id && (
                     <CheckCircle 
                       sx={{ 

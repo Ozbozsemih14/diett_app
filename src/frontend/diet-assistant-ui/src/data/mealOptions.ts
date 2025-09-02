@@ -14,6 +14,8 @@ export interface MealOption {
   imageUrl: string;
   recipe?: string;
   category: 'breakfast' | 'lunch' | 'dinner';
+  emoji: string;
+  gradient: string;
 }
 
 export const mealOptions: MealOption[] = [
@@ -33,7 +35,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['Vegetarian', 'High Protein', 'High Fiber'],
     imageUrl: '/images/meals/oatmeal-bowl.jpg',
     recipe: 'Cook steel-cut oats according to package instructions. Top with Greek yogurt, fresh berries, chopped almonds, and drizzle with honey.',
-    category: 'breakfast'
+    category: 'breakfast',
+    emoji: '🥣',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   },
   {
     id: 'breakfast-avocado-toast',
@@ -50,7 +54,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['Vegetarian', 'High Fiber', 'Healthy Fats'],
     imageUrl: '/images/meals/avocado-toast.jpg',
     recipe: 'Toast bread. Mash avocado with lemon juice, salt, and pepper. Poach eggs. Assemble toast with avocado, eggs, and tomatoes.',
-    category: 'breakfast'
+    category: 'breakfast',
+    emoji: '🥑',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
   },
   {
     id: 'breakfast-smoothie-bowl',
@@ -67,7 +73,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Vegan Option', 'Antioxidant Rich'],
     imageUrl: '/images/meals/smoothie-bowl.jpg',
     recipe: 'Blend banana, spinach, protein powder, and almond milk. Pour into bowl and top with chia seeds and coconut flakes.',
-    category: 'breakfast'
+    category: 'breakfast',
+    emoji: '🍌',
+    gradient: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)'
   },
   {
     id: 'breakfast-yogurt-parfait',
@@ -84,7 +92,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['Vegetarian', 'High Protein', 'Quick'],
     imageUrl: '/images/meals/yogurt-parfait.jpg',
     recipe: 'Layer yogurt, berries, and granola in a glass. Drizzle with maple syrup and vanilla.',
-    category: 'breakfast'
+    category: 'breakfast',
+    emoji: '🍓',
+    gradient: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)'
   },
 
   // LUNCH OPTIONS
@@ -103,7 +113,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Gluten Free', 'Complete Meal'],
     imageUrl: '/images/meals/chicken-quinoa-bowl.jpg',
     recipe: 'Grill chicken breast. Cook quinoa. Roast vegetables. Mix tahini with lemon juice and olive oil for dressing. Combine in bowl.',
-    category: 'lunch'
+    category: 'lunch',
+    emoji: '🍲',
+    gradient: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)'
   },
   {
     id: 'lunch-mediterranean-salad',
@@ -120,7 +132,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['Vegetarian', 'Mediterranean', 'High Fiber'],
     imageUrl: '/images/meals/mediterranean-salad.jpg',
     recipe: 'Combine all vegetables and chickpeas. Add feta and olives. Dress with olive oil and lemon juice.',
-    category: 'lunch'
+    category: 'lunch',
+    emoji: '🥗',
+    gradient: 'linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)'
   },
   {
     id: 'lunch-salmon-sweet-potato',
@@ -137,7 +151,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Omega-3 Rich', 'Gluten Free'],
     imageUrl: '/images/meals/salmon-sweet-potato.jpg',
     recipe: 'Season salmon with herbs. Roast sweet potato cubes. Steam broccoli. Bake salmon 15-20 minutes at 400°F.',
-    category: 'lunch'
+    category: 'lunch',
+    emoji: '🐟',
+    gradient: 'linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%)'
   },
   {
     id: 'lunch-turkey-wrap',
@@ -154,7 +170,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Quick', 'Portable'],
     imageUrl: '/images/meals/turkey-wrap.jpg',
     recipe: 'Spread hummus on tortilla. Add turkey and vegetables. Roll tightly and slice in half.',
-    category: 'lunch'
+    category: 'lunch',
+    emoji: '🌯',
+    gradient: 'linear-gradient(135deg, #fdbb2d 0%, #22c1c3 100%)'
   },
 
   // DINNER OPTIONS
@@ -173,7 +191,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Complete Meal', 'Asian Inspired'],
     imageUrl: '/images/meals/beef-stir-fry.jpg',
     recipe: 'Cook brown rice. Brown beef in pan. Add vegetables and seasonings. Stir-fry until vegetables are tender.',
-    category: 'dinner'
+    category: 'dinner',
+    emoji: '🥩',
+    gradient: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
   },
   {
     id: 'dinner-herb-crusted-cod',
@@ -190,7 +210,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Low Fat', 'Omega-3 Rich'],
     imageUrl: '/images/meals/herb-crusted-cod.jpg',
     recipe: 'Mix herbs with breadcrumbs. Coat cod and bake 15-20 minutes. Cook quinoa. Roast asparagus with olive oil.',
-    category: 'dinner'
+    category: 'dinner',
+    emoji: '🌠',
+    gradient: 'linear-gradient(135deg, #48c6ef 0%, #6f86d6 100%)'
   },
   {
     id: 'dinner-chicken-sweet-potato',
@@ -207,7 +229,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['High Protein', 'Comfort Food', 'Balanced'],
     imageUrl: '/images/meals/chicken-sweet-potato.jpg',
     recipe: 'Season and bake chicken thigh. Boil and mash sweet potato with Greek yogurt. Steam green beans.',
-    category: 'dinner'
+    category: 'dinner',
+    emoji: '🍗',
+    gradient: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)'
   },
   {
     id: 'dinner-vegetarian-lentil-curry',
@@ -224,7 +248,9 @@ export const mealOptions: MealOption[] = [
     dietaryTags: ['Vegetarian', 'High Fiber', 'Indian Inspired'],
     imageUrl: '/images/meals/lentil-curry.jpg',
     recipe: 'Sauté onions and spices. Add lentils, tomatoes, and coconut milk. Simmer 20 minutes. Serve over rice.',
-    category: 'dinner'
+    category: 'dinner',
+    emoji: '🍛',
+    gradient: 'linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)'
   }
 ];
 

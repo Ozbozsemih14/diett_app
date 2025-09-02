@@ -43,6 +43,7 @@ interface DietPlanContextType {
   
   // Actions
   generateNewPlan: (userProfile: any) => Promise<void>;
+  generatePlanFromWizard: (selectedMeals: { breakfast: any; lunch: any; dinner: any }, targetCalories: number, macroRatios: any) => Promise<void>;
   regenerateTodaysMeals: () => Promise<void>;
   updateMeal: (mealType: 'breakfast' | 'lunch' | 'dinner', newMeal: Meal) => void;
   savePlan: () => Promise<void>;
@@ -298,6 +299,56 @@ export const DietPlanProvider: React.FC<DietPlanProviderProps> = ({ children }) 
     setCurrentPlan(updatedPlan);
   };
 
+  const generatePlanFromWizard = async (
+    selectedMeals: { breakfast: any; lunch: any; dinner: any },
+    targetCalories: number,
+    macroRatios: any
+  ): Promise<void> => {
+    setIsLoading(true);
+    setError(null);
+    
+    try {
+      // Convert MealOption to Meal format
+      const convertMealOptionToMeal = (mealOption: any, mealType: string): Meal => ({
+        id: `${mealType}-${Date.now()}`,
+        name: mealOption.name,
+        time: mealType === 'breakfast' ? '07:30' : mealType === 'lunch' ? '12:30' : '19:00',
+        calories: mealOption.calories,
+        protein: mealOption.protein,
+        carbs: mealOption.carbs,
+        fat: mealOption.fat,
+        ingredients: mealOption.ingredients,
+        recipe: mealOption.recipe
+      });
+
+      const breakfast = convertMealOptionToMeal(selectedMeals.breakfast, 'breakfast');
+      const lunch = convertMealOptionToMeal(selectedMeals.lunch, 'lunch');
+      const dinner = convertMealOptionToMeal(selectedMeals.dinner, 'dinner');
+      
+      // Create the diet plan
+      const newPlan: DietPlan = {
+        id: `plan-${Date.now()}`,
+        createdAt: new Date().toISOString(),
+        targetCalories,
+        macroRatios,
+        meals: { breakfast, lunch, dinner },
+        totalNutrition: {
+          calories: breakfast.calories + lunch.calories + dinner.calories,
+          protein: breakfast.protein + lunch.protein + dinner.protein,
+          carbs: breakfast.carbs + lunch.carbs + dinner.carbs,
+          fat: breakfast.fat + lunch.fat + dinner.fat
+        }
+      };
+      
+      setCurrentPlan(newPlan);
+      
+    } catch (err) {
+      setError('Failed to generate diet plan from wizard');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const savePlan = async (): Promise<void> => {
     if (!currentPlan) return;
     
@@ -343,6 +394,7 @@ export const DietPlanProvider: React.FC<DietPlanProviderProps> = ({ children }) 
     isLoading,
     error,
     generateNewPlan,
+    generatePlanFromWizard,
     regenerateTodaysMeals,
     updateMeal,
     savePlan,
