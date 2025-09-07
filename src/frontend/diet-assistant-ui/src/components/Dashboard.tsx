@@ -109,6 +109,11 @@ const Dashboard: React.FC = () => {
     }
   }, [user]);
 
+  // Update water intake when workout data changes
+  useEffect(() => {
+    calculateWaterIntake();
+  }, [workoutData.isCompleted, userWeight]);
+
   // Calculate recommended water intake based on weight and activity
   const calculateWaterIntake = () => {
     const baseIntake = userWeight * 35; // 35ml per kg (base recommendation)
@@ -121,7 +126,12 @@ const Dashboard: React.FC = () => {
       'very_active': 1.4
     }[activityLevel] || 1.0;
     
-    const recommendedIntake = Math.round(baseIntake * activityMultiplier);
+    let recommendedIntake = Math.round(baseIntake * activityMultiplier);
+    
+    // Simple workout bonus: +500ml if workout completed
+    if (workoutData.isCompleted) {
+      recommendedIntake += 500;
+    }
     
     setWaterIntake(prev => ({ ...prev, target: recommendedIntake }));
     
@@ -147,7 +157,12 @@ const Dashboard: React.FC = () => {
 
   // Calculate what the target should be
   const getCurrentTarget = () => {
-    return Math.round(userWeight * 35 * getActivityMultiplier());
+    let target = Math.round(userWeight * 35 * getActivityMultiplier());
+    // Simple workout bonus: +500ml if workout completed
+    if (workoutData.isCompleted) {
+      target += 500;
+    }
+    return target;
   };
 
   // Add water intake (250ml per glass)
@@ -1798,6 +1813,16 @@ const Dashboard: React.FC = () => {
                         }}>
                           Activity ({user?.userData?.activity_level || 'sedentary'}): ×{getActivityMultiplier()}
                         </Typography>
+                        {workoutData.isCompleted && (
+                          <Typography variant="caption" sx={{ 
+                            color: '#10B981',
+                            display: 'block',
+                            mb: 0.5,
+                            fontWeight: 600
+                          }}>
+                            🏃‍♂️ Workout Bonus: +500ml
+                          </Typography>
+                        )}
                         <Typography variant="body2" sx={{ 
                           color: '#3B82F6',
                           fontWeight: 700
