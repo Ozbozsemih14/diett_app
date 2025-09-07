@@ -165,11 +165,32 @@ export default function UserForm({ onSubmit }: UserFormProps) {
             transition={{ duration: 0.5 }}
           >
             <Stack spacing={4}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Tell us about yourself
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom
+                  sx={{
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #7dd3fc 0%, #60a5fa 100%)'
+                      : 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 700,
+                    mb: 1
+                  }}
+                >
+                  Tell us about yourself ✨
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.7)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1.1rem'
+                  }}
+                >
                   We'll use this information to create your personalized diet plan
                 </Typography>
               </Box>
@@ -230,11 +251,32 @@ export default function UserForm({ onSubmit }: UserFormProps) {
             transition={{ duration: 0.5 }}
           >
             <Stack spacing={4}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  What's your activity level?
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom
+                  sx={{
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #34d399 0%, #10b981 100%)'
+                      : 'linear-gradient(135deg, #059669 0%, #047857 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 700,
+                    mb: 1
+                  }}
+                >
+                  What's your activity level? 🏃‍♂️
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.7)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1.1rem'
+                  }}
+                >
                   This helps us calculate your daily calorie needs
                 </Typography>
               </Box>
@@ -305,11 +347,32 @@ export default function UserForm({ onSubmit }: UserFormProps) {
             transition={{ duration: 0.5 }}
           >
             <Stack spacing={4}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  Dietary Preferences & Health
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom
+                  sx={{
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #f472b6 0%, #ec4899 100%)'
+                      : 'linear-gradient(135deg, #db2777 0%, #be185d 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 700,
+                    mb: 1
+                  }}
+                >
+                  Dietary Preferences & Health 🥗
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.7)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1.1rem'
+                  }}
+                >
                   Help us understand your dietary needs and health conditions
                 </Typography>
               </Box>
@@ -374,11 +437,32 @@ export default function UserForm({ onSubmit }: UserFormProps) {
             transition={{ duration: 0.5 }}
           >
             <Stack spacing={4}>
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  What's your primary goal?
+              <Box sx={{ textAlign: 'center', mb: 2 }}>
+                <Typography 
+                  variant="h4" 
+                  gutterBottom
+                  sx={{
+                    background: theme.palette.mode === 'dark'
+                      ? 'linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%)'
+                      : 'linear-gradient(135deg, #d97706 0%, #b45309 100%)',
+                    backgroundClip: 'text',
+                    WebkitBackgroundClip: 'text',
+                    WebkitTextFillColor: 'transparent',
+                    fontWeight: 700,
+                    mb: 1
+                  }}
+                >
+                  What's your primary goal? 🎯
                 </Typography>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
+                <Typography 
+                  variant="body1" 
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' 
+                      ? 'rgba(255, 255, 255, 0.7)' 
+                      : 'rgba(255, 255, 255, 0.9)',
+                    fontSize: '1.1rem'
+                  }}
+                >
                   We'll tailor your diet plan to help you achieve this goal
                 </Typography>
               </Box>
@@ -461,31 +545,117 @@ export default function UserForm({ onSubmit }: UserFormProps) {
         minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
+        background: theme.palette.mode === 'dark'
+          ? 'linear-gradient(135deg, #0f0f23 0%, #1a1a2e 25%, #16213e 50%, #0f0f23 100%)'
+          : 'linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%)',
+        position: 'relative',
+        overflow: 'hidden',
+        '&::before': {
+          content: '""',
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: theme.palette.mode === 'dark'
+            ? 'radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 119, 198, 0.3) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(120, 219, 255, 0.3) 0%, transparent 50%)'
+            : 'radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.2) 0%, transparent 50%), radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 50%), radial-gradient(circle at 40% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%)',
+          pointerEvents: 'none',
+        }
       }}
     >
-      <Paper
-        elevation={0}
-        sx={{
-          p: 4,
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 4,
-          flex: 1,
-          borderRadius: 0,
-        }}
-      >
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center',
+        minHeight: '100vh',
+        p: 2,
+        position: 'relative',
+        zIndex: 1,
+      }}>
+        <Paper
+          elevation={0}
+          sx={{
+            p: 6,
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 4,
+            width: '100%',
+            maxWidth: '800px',
+            borderRadius: '24px',
+            background: theme.palette.mode === 'dark'
+              ? 'rgba(255, 255, 255, 0.05)'
+              : 'rgba(255, 255, 255, 0.25)',
+            backdropFilter: 'blur(20px)',
+            border: `1px solid ${theme.palette.mode === 'dark' 
+              ? 'rgba(255, 255, 255, 0.1)' 
+              : 'rgba(255, 255, 255, 0.3)'}`,
+            boxShadow: theme.palette.mode === 'dark'
+              ? '0 25px 45px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05)'
+              : '0 25px 45px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(255, 255, 255, 0.5)',
+            position: 'relative',
+            overflow: 'hidden',
+            '&::before': {
+              content: '""',
+              position: 'absolute',
+              top: 0,
+              left: 0,
+              right: 0,
+              height: '1px',
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)'
+                : 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.8) 50%, transparent 100%)',
+            }
+          }}
+        >
         <Stepper
           activeStep={activeStep}
           sx={{
+            mb: 2,
             '& .MuiStepLabel-root .Mui-completed': {
-              color: 'primary.main',
+              color: theme.palette.mode === 'dark' ? '#7dd3fc' : '#0ea5e9',
             },
             '& .MuiStepLabel-label.Mui-completed.MuiStepLabel-alternativeLabel': {
-              color: 'primary.main',
+              color: theme.palette.mode === 'dark' ? '#7dd3fc' : '#0ea5e9',
+              fontWeight: 600,
             },
             '& .MuiStepLabel-root .Mui-active': {
-              color: 'primary.main',
+              color: theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
             },
+            '& .MuiStepLabel-label.Mui-active': {
+              fontWeight: 700,
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#1e293b',
+            },
+            '& .MuiStepConnector-line': {
+              borderColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.2)' 
+                : 'rgba(255, 255, 255, 0.4)',
+              borderTopWidth: '2px',
+            },
+            '& .MuiStepConnector-root.Mui-completed .MuiStepConnector-line': {
+              borderColor: theme.palette.mode === 'dark' ? '#7dd3fc' : '#0ea5e9',
+              borderTopWidth: '3px',
+            },
+            '& .MuiStepIcon-root': {
+              fontSize: '1.8rem',
+              color: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.3)' 
+                : 'rgba(255, 255, 255, 0.5)',
+            },
+            '& .MuiStepIcon-root.Mui-completed': {
+              color: theme.palette.mode === 'dark' ? '#7dd3fc' : '#0ea5e9',
+            },
+            '& .MuiStepIcon-root.Mui-active': {
+              color: theme.palette.mode === 'dark' ? '#60a5fa' : '#3b82f6',
+              fontSize: '2rem',
+            },
+            '& .MuiStepLabel-label': {
+              color: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.7)' 
+                : 'rgba(255, 255, 255, 0.9)',
+              fontSize: '0.875rem',
+              fontWeight: 500,
+            }
           }}
         >
           {steps.map((label) => (
@@ -495,18 +665,53 @@ export default function UserForm({ onSubmit }: UserFormProps) {
           ))}
         </Stepper>
 
-        <Box sx={{ mt: 4, flex: 1 }}>
+        <Box sx={{ 
+          mt: 3, 
+          flex: 1,
+          background: theme.palette.mode === 'dark'
+            ? 'rgba(255, 255, 255, 0.02)'
+            : 'rgba(255, 255, 255, 0.15)',
+          borderRadius: '16px',
+          p: 4,
+          border: `1px solid ${theme.palette.mode === 'dark' 
+            ? 'rgba(255, 255, 255, 0.05)' 
+            : 'rgba(255, 255, 255, 0.2)'}`,
+          backdropFilter: 'blur(10px)',
+        }}>
           {getStepContent(activeStep)}
         </Box>
 
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', pt: 2 }}>
+        <Box sx={{ 
+          display: 'flex', 
+          justifyContent: 'space-between', 
+          pt: 4,
+          gap: 2,
+        }}>
           <Button
             onClick={handleBack}
             disabled={activeStep === 0}
             startIcon={<ArrowBackIcon />}
             sx={{ 
               visibility: activeStep === 0 ? 'hidden' : 'visible',
+              px: 3,
+              py: 1.5,
+              borderRadius: '12px',
+              background: theme.palette.mode === 'dark'
+                ? 'rgba(255, 255, 255, 0.05)'
+                : 'rgba(255, 255, 255, 0.2)',
+              border: `1px solid ${theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.1)' 
+                : 'rgba(255, 255, 255, 0.3)'}`,
+              color: theme.palette.mode === 'dark' ? '#ffffff' : '#1e293b',
+              backdropFilter: 'blur(10px)',
+              '&:hover': {
+                background: theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.1)'
+                  : 'rgba(255, 255, 255, 0.3)',
+                transform: 'translateY(-2px)',
+              },
               '&.MuiButton-root': { gap: 1 },
+              transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
             }}
           >
             Back
@@ -518,10 +723,30 @@ export default function UserForm({ onSubmit }: UserFormProps) {
               endIcon={<ArrowForwardIcon />}
               sx={{ 
                 minWidth: 200,
+                px: 4,
+                py: 1.5,
+                borderRadius: '12px',
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: '0 8px 32px rgba(79, 172, 254, 0.35)',
+                '&:hover': {
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #5a67d8 0%, #667eea 100%)'
+                    : 'linear-gradient(135deg, #4299e1 0%, #4facfe 100%)',
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 12px 40px rgba(79, 172, 254, 0.45)',
+                },
                 '&.MuiButton-root': { gap: 1 },
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
-              Create My Plan
+              Create My Plan ✨
             </Button>
           ) : (
             <Button
@@ -530,14 +755,35 @@ export default function UserForm({ onSubmit }: UserFormProps) {
               endIcon={<ArrowForwardIcon />}
               sx={{ 
                 minWidth: 200,
+                px: 4,
+                py: 1.5,
+                borderRadius: '12px',
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                  : 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                border: 'none',
+                color: '#ffffff',
+                fontSize: '1rem',
+                fontWeight: 600,
+                textTransform: 'none',
+                boxShadow: '0 8px 32px rgba(79, 172, 254, 0.35)',
+                '&:hover': {
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(135deg, #5a67d8 0%, #667eea 100%)'
+                    : 'linear-gradient(135deg, #4299e1 0%, #4facfe 100%)',
+                  transform: 'translateY(-3px)',
+                  boxShadow: '0 12px 40px rgba(79, 172, 254, 0.45)',
+                },
                 '&.MuiButton-root': { gap: 1 },
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
               }}
             >
-              Continue
+              Continue →
             </Button>
           )}
         </Box>
-      </Paper>
+        </Paper>
+      </Box>
     </Box>
   );
 } 
