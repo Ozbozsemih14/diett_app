@@ -11,6 +11,11 @@ import {
   useTheme,
   TextField,
   InputAdornment,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Slider,
 } from '@mui/material';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
@@ -41,6 +46,16 @@ const Dashboard: React.FC = () => {
   });
   const [waterIntake, setWaterIntake] = useState({ current: 0, target: 2000 });
   const [userWeight, setUserWeight] = useState(70);
+  
+  // Workout tracking state
+  const [workoutData, setWorkoutData] = useState({
+    type: 'Yoga',
+    duration: 60, // minutes
+    isCompleted: false,
+    caloriesBurned: 0,
+    progress: 0 // percentage
+  });
+  const [goalType, setGoalType] = useState<'weight_loss' | 'maintain' | 'gain'>('weight_loss');
 
   // Update current time every minute
   useEffect(() => {
@@ -70,6 +85,27 @@ const Dashboard: React.FC = () => {
     // Set user weight from user data
     if (user?.userData?.weight) {
       setUserWeight(user.userData.weight);
+    }
+    
+    // Load workout data for today
+    const savedWorkout = localStorage.getItem(`workoutData_${today}`);
+    if (savedWorkout) {
+      setWorkoutData(JSON.parse(savedWorkout));
+    }
+    
+    // Set goal type from user data (fallback to weight_loss)
+    if (user?.userData?.goal) {
+      // Map user goal types to our goal types
+      const goalMapping: { [key: string]: 'weight_loss' | 'maintain' | 'gain' } = {
+        'lose_weight': 'weight_loss',
+        'maintain_weight': 'maintain',
+        'gain_weight': 'gain',
+        'weight_loss': 'weight_loss',
+        'maintain': 'maintain',
+        'gain': 'gain'
+      };
+      const mappedGoal = goalMapping[user.userData.goal] || 'weight_loss';
+      setGoalType(mappedGoal);
     }
   }, [user]);
 
@@ -125,6 +161,67 @@ const Dashboard: React.FC = () => {
     localStorage.setItem(`waterIntake_${today}`, JSON.stringify(updated));
   };
 
+  // Calculate calories burned based on workout type, duration, and user weight
+  const calculateCaloriesBurned = (type: string, duration: number, weight: number) => {
+    // MET (Metabolic Equivalent) values for different exercises
+    const metValues: { [key: string]: number } = {
+      'Yoga': 3.0,
+      'Running': 8.0,
+      'Cycling': 7.5,
+      'Swimming': 6.0,
+      'Weight Training': 6.0,
+      'Walking': 3.8,
+      'HIIT': 8.5,
+      'Pilates': 3.5,
+      'Dance': 5.0,
+      'Boxing': 7.8
+    };
+    
+    const met = metValues[type] || 4.0; // Default MET if exercise not found
+    // Formula: (MET * weight in kg * duration in hours)
+    return Math.round(met * weight * (duration / 60));
+  };
+
+  // Smart Adjustment: Calculate adjusted daily calorie goal
+  const getAdjustedCalorieGoal = () => {
+    const baseDietPlan = currentPlan?.targetCalories || user?.userData?.calorieGoal || 2000;
+    const workoutCalories = workoutData.isCompleted ? workoutData.caloriesBurned : 0;
+    
+    // Smart adjustment based on goal type
+    let adjustmentFactor = 1.0;
+    switch (goalType) {
+      case 'weight_loss':
+        adjustmentFactor = 0.7; // Give back 70% of burned calories
+        break;
+      case 'maintain':
+        adjustmentFactor = 1.0; // Give back all burned calories
+        break;
+      case 'gain':
+        adjustmentFactor = 1.2; // Give back 120% of burned calories
+        break;
+    }
+    
+    return baseDietPlan + Math.round(workoutCalories * adjustmentFactor);
+  };
+
+  // Calculate net calorie balance
+  const getNetCalorieBalance = () => {
+    const consumedCalories = getTodaysMealsData()
+      .filter(meal => meal.completed)
+      .reduce((total, meal) => total + meal.calories, 0);
+    
+    const workoutCalories = workoutData.isCompleted ? workoutData.caloriesBurned : 0;
+    const adjustedGoal = getAdjustedCalorieGoal();
+    
+    return {
+      consumed: consumedCalories,
+      burned: workoutCalories,
+      remaining: adjustedGoal - consumedCalories,
+      net: consumedCalories - workoutCalories,
+      adjustedGoal
+    };
+  };
+
   // Update food category progress
   const updateFoodCategory = (category: string, amount: number) => {
     setFoodCategories(prev => {
@@ -142,6 +239,79 @@ const Dashboard: React.FC = () => {
       
       return updated;
     });
+  };
+
+  // Update workout progress and recalculate calories
+  const updateWorkoutProgress = (newProgress: number) => {
+    const caloriesBurned = calculateCaloriesBurned(workoutData.type, workoutData.duration, userWeight);
+    const actualBurned = Math.round((caloriesBurned * newProgress) / 100);
+    
+    const updatedWorkout = {
+      ...workoutData,
+      progress: newProgress,
+      caloriesBurned: actualBurned,
+      isCompleted: newProgress >= 100
+    };
+    
+    setWorkoutData(updatedWorkout);
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`workoutData_${today}`, JSON.stringify(updatedWorkout));
+  };
+
+  // Complete workout
+  const completeWorkout = () => {
+    const totalCaloriesBurned = calculateCaloriesBurned(workoutData.type, workoutData.duration, userWeight);
+    
+    const completedWorkout = {
+      ...workoutData,
+      isCompleted: true,
+      progress: 100,
+      caloriesBurned: totalCaloriesBurned
+    };
+    
+    setWorkoutData(completedWorkout);
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`workoutData_${today}`, JSON.stringify(completedWorkout));
+  };
+
+  // Change workout type
+  const changeWorkoutType = (newType: string) => {
+    const newCaloriesBurned = calculateCaloriesBurned(newType, workoutData.duration, userWeight);
+    const actualBurned = Math.round((newCaloriesBurned * workoutData.progress) / 100);
+    
+    const updatedWorkout = {
+      ...workoutData,
+      type: newType,
+      caloriesBurned: actualBurned
+    };
+    
+    setWorkoutData(updatedWorkout);
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`workoutData_${today}`, JSON.stringify(updatedWorkout));
+  };
+
+  // Change workout duration  
+  const changeWorkoutDuration = (newDuration: number) => {
+    const newCaloriesBurned = calculateCaloriesBurned(workoutData.type, newDuration, userWeight);
+    const actualBurned = Math.round((newCaloriesBurned * workoutData.progress) / 100);
+    
+    const updatedWorkout = {
+      ...workoutData,
+      duration: newDuration,
+      caloriesBurned: actualBurned
+    };
+    
+    setWorkoutData(updatedWorkout);
+    
+    // Save to localStorage
+    const today = new Date().toISOString().split('T')[0];
+    localStorage.setItem(`workoutData_${today}`, JSON.stringify(updatedWorkout));
   };
 
   // Get today's meals from selected meals or mock data
@@ -220,36 +390,44 @@ const Dashboard: React.FC = () => {
     await toggleMealCompletion(today, mealType, !currentStatus);
   };
 
-  // Calculate overview statistics based on meal completion
+  // Calculate overview statistics based on meal completion with Smart Adjustment
   const getOverviewStats = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayProgress = mealProgress.find(p => p.date === today);
     const meals = getTodaysMealsData();
+    const calorieBalance = getNetCalorieBalance();
     
     // Calculate completed meals
     const completedMeals = meals.filter(meal => meal.completed).length;
     const totalMeals = meals.length;
     
-    // Calculate remaining calories from incomplete meals
-    const incompleteMeals = meals.filter(meal => !meal.completed);
-    const remainingCalories = incompleteMeals.reduce((total, meal) => total + meal.calories, 0);
+    // Use Smart Adjustment calculations
+    const adjustedGoal = calorieBalance.adjustedGoal;
+    const remainingCalories = Math.max(0, calorieBalance.remaining);
+    const consumedCalories = calorieBalance.consumed;
+    const workoutCaloriesBurned = calorieBalance.burned;
     
-    // Calculate total possible calories
-    const totalCalories = meals.reduce((total, meal) => total + meal.calories, 0);
-    const consumedCalories = totalCalories - remainingCalories;
-    const dailyGoalProgress = Math.round((consumedCalories / (user?.userData?.calorieGoal || 2000)) * 100);
+    // Calculate progress against adjusted goal (includes workout bonus)
+    const dailyGoalProgress = Math.round((consumedCalories / adjustedGoal) * 100);
     
     // Calculate streak (simplified)
     const streak = mealProgress.filter(day => 
       day.meals.breakfast && day.meals.lunch && day.meals.dinner
     ).length;
     
+    // Net calorie balance (positive = surplus, negative = deficit)
+    const netBalance = calorieBalance.net;
+    
     return {
       remainingCalories,
       completedMeals,
       totalMeals,
       dailyGoalProgress,
-      streak: Math.min(streak, 30) // Cap at 30 for display
+      streak: Math.min(streak, 30), // Cap at 30 for display
+      adjustedGoal,
+      workoutCaloriesBurned,
+      consumedCalories,
+      netBalance
     };
   };
 
@@ -326,7 +504,7 @@ const Dashboard: React.FC = () => {
       </MotionBox>
       
       <Grid container spacing={3} sx={{ p: 3 }}>
-        {/* Today's Workout */}
+        {/* Today's Workout - Interactive */}
         <Grid item xs={12} md={6}>
           <MotionPaper
             variants={itemVariants}
@@ -341,46 +519,168 @@ const Dashboard: React.FC = () => {
               backdropFilter: 'blur(10px)',
             }}
           >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <span style={{ fontSize: '24px', marginRight: '12px' }}>🔥</span>
-              <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
-                Today's Workout
-              </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                <span style={{ fontSize: '24px', marginRight: '12px' }}>🔥</span>
+                <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
+                  Today's Workout
+                </Typography>
+              </Box>
+              {workoutData.isCompleted && (
+                <Chip 
+                  label="Completed" 
+                  size="small" 
+                  sx={{ 
+                    backgroundColor: '#10B981', 
+                    color: 'white',
+                    fontWeight: 500 
+                  }} 
+                />
+              )}
             </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
+            
+            {/* Workout Type Selector */}
+            <FormControl size="small" sx={{ minWidth: 120, mb: 2 }}>
+              <Select
+                value={workoutData.type}
+                onChange={(e) => changeWorkoutType(e.target.value)}
+                disabled={workoutData.isCompleted}
+                sx={{
+                  color: '#FFFFFF',
+                  '& .MuiSelect-icon': { color: '#FFFFFF' },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.3)',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: 'rgba(255,255,255,0.5)',
+                  },
+                  '& .MuiSelect-select': {
+                    backgroundColor: 'rgba(255,255,255,0.1)',
+                    borderRadius: '8px',
+                  }
+                }}
+              >
+                {['Yoga', 'Running', 'Cycling', 'Swimming', 'Weight Training', 'Walking', 'HIIT', 'Pilates', 'Dance', 'Boxing'].map((type) => (
+                  <MenuItem key={type} value={type}>{type}</MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {/* Duration Slider */}
+            <Box sx={{ mb: 2 }}>
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 1 }}>
+                Duration: {workoutData.duration} minutes
+              </Typography>
+              <Slider
+                value={workoutData.duration}
+                onChange={(_, value) => changeWorkoutDuration(value as number)}
+                disabled={workoutData.isCompleted}
+                min={15}
+                max={180}
+                step={15}
+                marks={[
+                  { value: 30, label: '30m' },
+                  { value: 60, label: '60m' },
+                  { value: 90, label: '90m' },
+                  { value: 120, label: '2h' }
+                ]}
+                sx={{
+                  color: '#FF6B35',
+                  '& .MuiSlider-markLabel': {
+                    color: 'rgba(255,255,255,0.6)',
+                    fontSize: '0.7rem'
+                  },
+                  '& .MuiSlider-mark': {
+                    backgroundColor: 'rgba(255,255,255,0.3)',
+                  }
+                }}
+              />
+            </Box>
+
+            {/* Calories Display */}
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
               <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                Exercise Type
+                Potential Calories: {calculateCaloriesBurned(workoutData.type, workoutData.duration, userWeight)} cal
               </Typography>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
-                Duration
-              </Typography>
-            </Box>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 2 }}>
-              <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
-                Yoga
-              </Typography>
-              <Typography variant="h6" sx={{ color: '#FFFFFF' }}>
-                60 min
+              <Typography variant="body2" sx={{ color: '#FF6B35', fontWeight: 600 }}>
+                Burned: {workoutData.caloriesBurned} cal
               </Typography>
             </Box>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 2 }}>
-              Calories Burned: 180 cal
+
+            {/* Progress Bar (Clickable) */}
+            <Box 
+              sx={{ cursor: workoutData.isCompleted ? 'default' : 'pointer', mb: 1 }}
+              onClick={() => !workoutData.isCompleted && updateWorkoutProgress(Math.min(workoutData.progress + 25, 100))}
+            >
+              <LinearProgress 
+                variant="determinate" 
+                value={workoutData.progress} 
+                sx={{ 
+                  height: 12, 
+                  borderRadius: 6,
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  '& .MuiLinearProgress-bar': {
+                    bgcolor: workoutData.isCompleted ? '#10B981' : '#FF6B35',
+                    borderRadius: 6,
+                  }
+                }}
+              />
+            </Box>
+            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mb: 2, textAlign: 'right' }}>
+              {workoutData.progress}% {!workoutData.isCompleted && '(click to add +25%)'}
             </Typography>
-            <LinearProgress 
-              variant="determinate" 
-              value={45} 
-              sx={{ 
-                height: 8, 
-                borderRadius: 4,
-                bgcolor: 'rgba(255,255,255,0.2)',
-                '& .MuiLinearProgress-bar': {
-                  bgcolor: '#FF6B35',
-                }
-              }}
-            />
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)', mt: 1, textAlign: 'right' }}>
-              45%
-            </Typography>
+
+            {/* Action Buttons */}
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              {!workoutData.isCompleted ? (
+                <>
+                  <Button
+                    variant="contained"
+                    onClick={completeWorkout}
+                    sx={{
+                      backgroundColor: '#10B981',
+                      '&:hover': { backgroundColor: '#0EA373' },
+                      fontSize: '0.8rem',
+                      flex: 1
+                    }}
+                  >
+                    ✅ Complete Workout
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={() => updateWorkoutProgress(0)}
+                    sx={{
+                      borderColor: 'rgba(255,255,255,0.3)',
+                      color: 'rgba(255,255,255,0.8)',
+                      fontSize: '0.8rem',
+                      '&:hover': {
+                        borderColor: 'rgba(255,255,255,0.5)',
+                        backgroundColor: 'rgba(255,255,255,0.1)'
+                      }
+                    }}
+                  >
+                    🔄 Reset
+                  </Button>
+                </>
+              ) : (
+                <Button
+                  variant="outlined"
+                  onClick={() => setWorkoutData({ ...workoutData, isCompleted: false, progress: 0, caloriesBurned: 0 })}
+                  sx={{
+                    borderColor: 'rgba(255,255,255,0.3)',
+                    color: 'rgba(255,255,255,0.8)',
+                    fontSize: '0.8rem',
+                    flex: 1,
+                    '&:hover': {
+                      borderColor: 'rgba(255,255,255,0.5)',
+                      backgroundColor: 'rgba(255,255,255,0.1)'
+                    }
+                  }}
+                >
+                  🔄 Start New Workout
+                </Button>
+              )}
+            </Box>
           </MotionPaper>
         </Grid>
 
@@ -406,37 +706,66 @@ const Dashboard: React.FC = () => {
               </Typography>
             </Box>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 3 }}>
-              Recommended after your yoga workout:
+              Recommended after your {workoutData.type.toLowerCase()} workout:
             </Typography>
             <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-              {['Protein Shake', 'Banana + Nuts', 'Greek Yogurt'].map((item) => (
-                <Chip
-                  key={item}
-                  label={item}
-                  sx={{
-                    backgroundColor: 'rgba(255,255,255,0.2)',
-                    color: '#FFFFFF',
-                    fontSize: '0.8rem',
-                    '&:hover': {
-                      backgroundColor: 'rgba(255,255,255,0.3)',
-                    }
-                  }}
-                />
-              ))}
+              {(() => {
+                // Different nutrition recommendations based on workout type
+                const nutritionMap: { [key: string]: string[] } = {
+                  'Yoga': ['Green Tea', 'Greek Yogurt', 'Almonds'],
+                  'Running': ['Protein Shake', 'Banana', 'Electrolytes'],
+                  'Cycling': ['Energy Bar', 'Chocolate Milk', 'Fruits'],
+                  'Swimming': ['Protein Smoothie', 'Tuna Sandwich', 'Water'],
+                  'Weight Training': ['Protein Shake', 'Chicken Breast', 'Rice'],
+                  'Walking': ['Light Snack', 'Apple', 'Water'],
+                  'HIIT': ['Protein Bar', 'Recovery Drink', 'Eggs'],
+                  'Pilates': ['Light Yogurt', 'Nuts', 'Herbal Tea'],
+                  'Dance': ['Energy Drink', 'Dried Fruits', 'Protein'],
+                  'Boxing': ['Recovery Shake', 'Lean Meat', 'Carbs']
+                };
+                
+                return (nutritionMap[workoutData.type] || ['Protein Shake', 'Banana', 'Water']).map((item) => (
+                  <Chip
+                    key={item}
+                    label={item}
+                    sx={{
+                      backgroundColor: 'rgba(255,255,255,0.2)',
+                      color: '#FFFFFF',
+                      fontSize: '0.8rem',
+                      '&:hover': {
+                        backgroundColor: 'rgba(255,255,255,0.3)',
+                      }
+                    }}
+                  />
+                ));
+              })()}
             </Box>
             <Box sx={{
-              backgroundColor: 'rgba(255,255,255,0.1)',
+              backgroundColor: workoutData.isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.1)',
               borderRadius: '8px',
               p: 2,
+              border: workoutData.isCompleted ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'
             }}>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <span style={{ fontSize: '16px', marginRight: '8px' }}>🎯</span>
+                <span style={{ fontSize: '16px', marginRight: '8px' }}>
+                  {workoutData.isCompleted ? '🎉' : '🎯'}
+                </span>
                 <Typography variant="body2" sx={{ color: '#FFFFFF', fontWeight: 500 }}>
-                  Workout Day Bonus
+                  {workoutData.isCompleted ? 'Smart Calorie Adjustment Active!' : 'Potential Workout Bonus'}
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)' }}>
-                +180 calories added to your daily goal!
+              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 1 }}>
+                {workoutData.isCompleted 
+                  ? `+${Math.round(workoutData.caloriesBurned * (goalType === 'weight_loss' ? 0.7 : goalType === 'maintain' ? 1.0 : 1.2))} calories added to your daily goal!`
+                  : `+${Math.round(calculateCaloriesBurned(workoutData.type, workoutData.duration, userWeight) * (goalType === 'weight_loss' ? 0.7 : goalType === 'maintain' ? 1.0 : 1.2))} potential calories`
+                }
+              </Typography>
+              <Typography variant="caption" sx={{ 
+                color: 'rgba(255,255,255,0.6)',
+                fontSize: '0.75rem',
+                fontStyle: 'italic'
+              }}>
+                Goal: {goalType.replace('_', ' ')} • Adjustment: {goalType === 'weight_loss' ? '70%' : goalType === 'maintain' ? '100%' : '120%'} of burned calories
               </Typography>
             </Box>
           </MotionPaper>
@@ -877,6 +1206,24 @@ const Dashboard: React.FC = () => {
                   bgColor: stats.dailyGoalProgress >= 100 ? 'rgba(16, 185, 129, 0.1)' : stats.dailyGoalProgress >= 75 ? 'rgba(245, 158, 11, 0.1)' : 'rgba(239, 68, 68, 0.1)'
                 },
                 {
+                  icon: '🏃‍♂️',
+                  value: workoutData.isCompleted ? `${stats.workoutCaloriesBurned}` : '0',
+                  label: 'Workout Calories',
+                  color: workoutData.isCompleted ? '#FF6B35' : '#9CA3AF',
+                  bgColor: workoutData.isCompleted ? 'rgba(255, 107, 53, 0.1)' : 'rgba(156, 163, 175, 0.1)'
+                },
+                {
+                  icon: '⚖️',
+                  value: stats.netBalance < 0 ? `${Math.abs(stats.netBalance)}` : `+${stats.netBalance}`,
+                  label: stats.netBalance < 0 ? 'Calorie Deficit' : 'Calorie Surplus',
+                  color: goalType === 'weight_loss' && stats.netBalance < 0 ? '#10B981' : 
+                         goalType === 'maintain' && Math.abs(stats.netBalance) < 200 ? '#10B981' : 
+                         goalType === 'gain' && stats.netBalance > 0 ? '#10B981' : '#F59E0B',
+                  bgColor: goalType === 'weight_loss' && stats.netBalance < 0 ? 'rgba(16, 185, 129, 0.1)' : 
+                          goalType === 'maintain' && Math.abs(stats.netBalance) < 200 ? 'rgba(16, 185, 129, 0.1)' : 
+                          goalType === 'gain' && stats.netBalance > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
+                },
+                {
                   icon: '❤️',
                   value: `${stats.streak}`,
                   label: 'Perfect Days',
@@ -885,7 +1232,7 @@ const Dashboard: React.FC = () => {
                 }
               ];
             })().map((item, index) => (
-              <Grid item xs={12} sm={6} md={3} key={index}>
+              <Grid item xs={12} sm={6} md={4} key={index}>
                 <MotionPaper
                   variants={itemVariants}
                   sx={{
@@ -1258,8 +1605,9 @@ const Dashboard: React.FC = () => {
                         return sum + (meal.calories * 0.3 / 9); // Fallback: 30% calories from fat
                       }, 0);
 
-                      // Calculate target macros from current plan
-                      const targetCalories = currentPlan?.targetCalories || 2000;
+                      // Calculate target macros from current plan with Smart Adjustment
+                      const calorieBalance = getNetCalorieBalance();
+                      const targetCalories = calorieBalance.adjustedGoal;
                       const targetProtein = targetCalories * 0.25 / 4; // 25% from protein
                       const targetCarbs = targetCalories * 0.45 / 4;   // 45% from carbs  
                       const targetFat = targetCalories * 0.3 / 9;      // 30% from fat
