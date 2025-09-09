@@ -232,7 +232,7 @@ const Dashboard: React.FC = () => {
       consumed: consumedCalories,
       burned: workoutCalories,
       remaining: adjustedGoal - consumedCalories,
-      net: consumedCalories - workoutCalories,
+      net: consumedCalories - adjustedGoal,
       adjustedGoal
     };
   };
@@ -401,6 +401,24 @@ const Dashboard: React.FC = () => {
     const today = new Date().toISOString().split('T')[0];
     const todayProgress = mealProgress.find(p => p.date === today);
     const currentStatus = todayProgress?.meals[mealType] || false;
+    
+    // If completing meal, auto-update food categories
+    if (!currentStatus) {
+      // Smart food category updates based on meal type
+      updateFoodCategory('protein', 1);
+      
+      if (mealType === 'breakfast') {
+        updateFoodCategory('fruits', 1);
+        updateFoodCategory('dairy', 1);
+        updateFoodCategory('grains', 1);
+      } else if (mealType === 'lunch') {
+        updateFoodCategory('vegetables', 2);
+        updateFoodCategory('grains', 1);
+      } else if (mealType === 'dinner') {
+        updateFoodCategory('vegetables', 1);
+        updateFoodCategory('protein', 1); // Extra protein for dinner
+      }
+    }
     
     await toggleMealCompletion(today, mealType, !currentStatus);
   };
@@ -814,35 +832,70 @@ const Dashboard: React.FC = () => {
               </Typography>
             </Box>
             <Grid container spacing={3}>
-              {[
-                {
-                  title: 'Breakfast',
-                  meal: 'Oatmeal with Berries',
-                  calories: '350 cal',
-                  protein: '12g protein',
-                  time: '15min',
-                  ingredients: ['Oats', 'Blueberries', 'Almonds'],
-                  color: '#8B5CF6'
-                },
-                {
-                  title: 'Lunch',
-                  meal: 'Grilled Chicken Salad',
-                  calories: '450 cal',
-                  protein: '35g protein',
-                  time: '20min',
-                  ingredients: ['Chicken breast', 'Mixed greens', 'Cherry tomatoes'],
-                  color: '#10B981'
-                },
-                {
-                  title: 'Dinner',
-                  meal: 'Salmon with Quinoa',
-                  calories: '520 cal',
-                  protein: '40g protein',
-                  time: '25min',
-                  ingredients: ['Salmon fillet', 'Quinoa', 'Broccoli'],
-                  color: '#F59E0B'
-                }
-              ].map((meal, index) => (
+              {(() => {
+                const dietPlanMeals = getTodaysMeals();
+                
+                // Use DietPlan data if available, otherwise fallback
+                const mealSuggestions = dietPlanMeals ? [
+                  {
+                    title: 'Breakfast',
+                    meal: dietPlanMeals.breakfast.name,
+                    calories: `${dietPlanMeals.breakfast.calories} cal`,
+                    protein: `${dietPlanMeals.breakfast.protein}g protein`,
+                    time: '15min',
+                    ingredients: dietPlanMeals.breakfast.ingredients || ['Various ingredients'],
+                    color: '#8B5CF6'
+                  },
+                  {
+                    title: 'Lunch',
+                    meal: dietPlanMeals.lunch.name,
+                    calories: `${dietPlanMeals.lunch.calories} cal`,
+                    protein: `${dietPlanMeals.lunch.protein}g protein`,
+                    time: '20min',
+                    ingredients: dietPlanMeals.lunch.ingredients || ['Various ingredients'],
+                    color: '#10B981'
+                  },
+                  {
+                    title: 'Dinner',
+                    meal: dietPlanMeals.dinner.name,
+                    calories: `${dietPlanMeals.dinner.calories} cal`,
+                    protein: `${dietPlanMeals.dinner.protein}g protein`,
+                    time: '25min',
+                    ingredients: dietPlanMeals.dinner.ingredients || ['Various ingredients'],
+                    color: '#F59E0B'
+                  }
+                ] : [
+                  {
+                    title: 'Breakfast',
+                    meal: 'Create Your Plan',
+                    calories: '--- cal',
+                    protein: '--g protein',
+                    time: '--min',
+                    ingredients: ['Plan your meals first'],
+                    color: '#8B5CF6'
+                  },
+                  {
+                    title: 'Lunch',
+                    meal: 'Create Your Plan',
+                    calories: '--- cal',
+                    protein: '--g protein',
+                    time: '--min',
+                    ingredients: ['Plan your meals first'],
+                    color: '#10B981'
+                  },
+                  {
+                    title: 'Dinner',
+                    meal: 'Create Your Plan',
+                    calories: '--- cal',
+                    protein: '--g protein',
+                    time: '--min',
+                    ingredients: ['Plan your meals first'],
+                    color: '#F59E0B'
+                  }
+                ];
+                
+                return mealSuggestions;
+              })().map((meal, index) => (
                 <Grid item xs={12} md={4} key={index}>
                   <Box
                     sx={{

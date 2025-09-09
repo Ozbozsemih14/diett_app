@@ -132,7 +132,7 @@ const DietPlanWizard: React.FC = () => {
         
         <Grid container spacing={3}>
           {meals.map((meal) => (
-            <Grid item xs={12} sm={6} md={4} key={meal.id}>
+            <Grid item xs={12} sm={6} md={3} key={meal.id}>
               <MotionCard
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}

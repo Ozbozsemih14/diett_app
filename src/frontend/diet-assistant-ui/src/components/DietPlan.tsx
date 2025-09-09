@@ -819,10 +819,13 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
           {swapMealIndex !== null && currentMeals[swapMealIndex]?.alternatives && (
             <Grid container spacing={2}>
               {currentMeals[swapMealIndex].alternatives!.map((alternative, altIndex) => (
-                <Grid item xs={12} sm={6} key={altIndex}>
+                <Grid item xs={12} sm={6} md={6} lg={3} key={altIndex}>
                   <Card 
                     sx={{ 
                       cursor: 'pointer',
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
                       '&:hover': {
                         boxShadow: 4,
                         transform: 'translateY(-2px)'
@@ -831,7 +834,7 @@ export default function DietPlanView({ dietPlan, onBack }: DietPlanProps) {
                     }}
                     onClick={() => replaceMeal(alternative)}
                   >
-                    <CardContent>
+                    <CardContent sx={{ flex: '1 0 auto', display: 'flex', flexDirection: 'column' }}>
                       <Typography variant="h6" gutterBottom>
                         {alternative.name}
                       </Typography>
