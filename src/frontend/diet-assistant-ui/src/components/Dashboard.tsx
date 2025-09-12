@@ -366,31 +366,31 @@ const Dashboard: React.FC = () => {
         }
       ];
     } else {
-      // Fallback to original data if no diet plan exists
+      // No diet plan exists - show placeholder data
       return [
         {
           name: 'Breakfast',
           time: '8:00 AM',
-          description: selectedMeals.breakfast?.name || 'Oatmeal with berries, Greek yogurt, Almonds',
-          calories: selectedMeals.breakfast?.calories || 350,
-          completed: todayProgress?.meals.breakfast || false,
-          color: todayProgress?.meals.breakfast ? '#10B981' : '#9CA3AF'
+          description: 'Plan your breakfast',
+          calories: 0,
+          completed: false,
+          color: '#9CA3AF'
         },
         {
           name: 'Lunch', 
           time: '1:00 PM',
-          description: selectedMeals.lunch?.name || 'Grilled chicken salad, Quinoa, Avocado',
-          calories: selectedMeals.lunch?.calories || 520,
-          completed: todayProgress?.meals.lunch || false,
-          color: todayProgress?.meals.lunch ? '#10B981' : '#9CA3AF'
+          description: 'Plan your lunch',
+          calories: 0,
+          completed: false,
+          color: '#9CA3AF'
         },
         {
           name: 'Dinner',
           time: '7:00 PM', 
-          description: selectedMeals.dinner?.name || 'Salmon, Brown rice, Steamed vegetables',
-          calories: selectedMeals.dinner?.calories || 550,
-          completed: todayProgress?.meals.dinner || false,
-          color: todayProgress?.meals.dinner ? '#10B981' : '#9CA3AF'
+          description: 'Plan your dinner',
+          calories: 0,
+          completed: false,
+          color: '#9CA3AF'
         }
       ];
     }
@@ -538,7 +538,7 @@ const Dashboard: React.FC = () => {
       
       <Grid container spacing={3} sx={{ p: 3 }}>
         {/* Today's Workout - Interactive */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12}>
           <MotionPaper
             variants={itemVariants}
             sx={{ 
@@ -717,92 +717,6 @@ const Dashboard: React.FC = () => {
           </MotionPaper>
         </Grid>
 
-        {/* Post-Workout Nutrition */}
-        <Grid item xs={12} md={6}>
-          <MotionPaper
-            variants={itemVariants}
-            sx={{ 
-              p: 3, 
-              mb: 3,
-              background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, rgba(16, 75, 68, 0.95) 0%, rgba(8, 47, 43, 0.95) 100%)'
-                : 'linear-gradient(135deg, #14B8A6 0%, #0D9488 100%)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              borderRadius: '16px',
-              backdropFilter: 'blur(10px)',
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-              <span style={{ fontSize: '24px', marginRight: '12px' }}>🍽️</span>
-              <Typography variant="h6" sx={{ color: '#FFFFFF', fontWeight: 600 }}>
-                Post-Workout Nutrition
-              </Typography>
-            </Box>
-            <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 3 }}>
-              Recommended after your {workoutData.type.toLowerCase()} workout:
-            </Typography>
-            <Box sx={{ display: 'flex', gap: 1, mb: 3, flexWrap: 'wrap' }}>
-              {(() => {
-                // Different nutrition recommendations based on workout type
-                const nutritionMap: { [key: string]: string[] } = {
-                  'Yoga': ['Green Tea', 'Greek Yogurt', 'Almonds'],
-                  'Running': ['Protein Shake', 'Banana', 'Electrolytes'],
-                  'Cycling': ['Energy Bar', 'Chocolate Milk', 'Fruits'],
-                  'Swimming': ['Protein Smoothie', 'Tuna Sandwich', 'Water'],
-                  'Weight Training': ['Protein Shake', 'Chicken Breast', 'Rice'],
-                  'Walking': ['Light Snack', 'Apple', 'Water'],
-                  'HIIT': ['Protein Bar', 'Recovery Drink', 'Eggs'],
-                  'Pilates': ['Light Yogurt', 'Nuts', 'Herbal Tea'],
-                  'Dance': ['Energy Drink', 'Dried Fruits', 'Protein'],
-                  'Boxing': ['Recovery Shake', 'Lean Meat', 'Carbs']
-                };
-                
-                return (nutritionMap[workoutData.type] || ['Protein Shake', 'Banana', 'Water']).map((item) => (
-                  <Chip
-                    key={item}
-                    label={item}
-                    sx={{
-                      backgroundColor: 'rgba(255,255,255,0.2)',
-                      color: '#FFFFFF',
-                      fontSize: '0.8rem',
-                      '&:hover': {
-                        backgroundColor: 'rgba(255,255,255,0.3)',
-                      }
-                    }}
-                  />
-                ));
-              })()}
-            </Box>
-            <Box sx={{
-              backgroundColor: workoutData.isCompleted ? 'rgba(16, 185, 129, 0.2)' : 'rgba(255,255,255,0.1)',
-              borderRadius: '8px',
-              p: 2,
-              border: workoutData.isCompleted ? '1px solid rgba(16, 185, 129, 0.4)' : 'none'
-            }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                <span style={{ fontSize: '16px', marginRight: '8px' }}>
-                  {workoutData.isCompleted ? '🎉' : '🎯'}
-                </span>
-                <Typography variant="body2" sx={{ color: '#FFFFFF', fontWeight: 500 }}>
-                  {workoutData.isCompleted ? 'Smart Calorie Adjustment Active!' : 'Potential Workout Bonus'}
-                </Typography>
-              </Box>
-              <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.8)', mb: 1 }}>
-                {workoutData.isCompleted 
-                  ? `+${Math.round(workoutData.caloriesBurned * (goalType === 'weight_loss' ? 0.7 : goalType === 'maintain' ? 1.0 : 1.2))} calories added to your daily goal!`
-                  : `+${Math.round(calculateCaloriesBurned(workoutData.type, workoutData.duration, userWeight) * (goalType === 'weight_loss' ? 0.7 : goalType === 'maintain' ? 1.0 : 1.2))} potential calories`
-                }
-              </Typography>
-              <Typography variant="caption" sx={{ 
-                color: 'rgba(255,255,255,0.6)',
-                fontSize: '0.75rem',
-                fontStyle: 'italic'
-              }}>
-                Goal: {goalType.replace('_', ' ')} • Adjustment: {goalType === 'weight_loss' ? '70%' : goalType === 'maintain' ? '100%' : '120%'} of burned calories
-              </Typography>
-            </Box>
-          </MotionPaper>
-        </Grid>
 
         {/* Today's Meal Suggestions */}
         <Grid item xs={12}>
@@ -979,161 +893,6 @@ const Dashboard: React.FC = () => {
           </MotionPaper>
         </Grid>
 
-        {/* Food Categories Progress */}
-        <Grid item xs={12}>
-          <MotionPaper
-            variants={itemVariants}
-            sx={{ 
-              p: 3, 
-              mb: 3,
-              background: theme.palette.mode === 'dark'
-                ? 'linear-gradient(135deg, rgba(31,41,55,0.95) 0%, rgba(17,24,39,0.95) 100%)'
-                : 'linear-gradient(135deg, #ffffff 0%, #f5f5f5 100%)',
-              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
-              borderRadius: '16px',
-              backdropFilter: 'blur(10px)',
-              border: theme.palette.mode === 'dark'
-                ? '1px solid rgba(255,255,255,0.1)'
-                : 'none',
-            }}
-          >
-            <Typography variant="h6" sx={{ 
-              mb: 3,
-              color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
-              fontWeight: 600,
-            }}>
-              Food Categories Progress
-            </Typography>
-            <Grid container spacing={3}>
-              {[
-                { name: 'Protein', current: foodCategories.protein.current, total: foodCategories.protein.total, color: '#EF4444', unit: foodCategories.protein.unit, key: 'protein' },
-                { name: 'Vegetables', current: foodCategories.vegetables.current, total: foodCategories.vegetables.total, color: '#10B981', unit: foodCategories.vegetables.unit, key: 'vegetables' },
-                { name: 'Fruits', current: foodCategories.fruits.current, total: foodCategories.fruits.total, color: '#F59E0B', unit: foodCategories.fruits.unit, key: 'fruits' },
-                { name: 'Grains', current: foodCategories.grains.current, total: foodCategories.grains.total, color: '#8B5CF6', unit: foodCategories.grains.unit, key: 'grains' },
-                { name: 'Dairy', current: foodCategories.dairy.current, total: foodCategories.dairy.total, color: '#3B82F6', unit: foodCategories.dairy.unit, key: 'dairy' }
-              ].map((category, index) => (
-                <Grid item xs={12} sm={6} md={2.4} key={index}>
-                  <Box sx={{ textAlign: 'center' }}>
-                    <Box sx={{ position: 'relative', display: 'inline-flex', mb: 2 }}>
-                      <CircularProgress
-                        variant="determinate"
-                        value={(category.current / category.total) * 100}
-                        size={80}
-                        thickness={6}
-                        sx={{
-                          color: category.color,
-                          '& .MuiCircularProgress-circle': {
-                            strokeLinecap: 'round',
-                          },
-                        }}
-                      />
-                      <CircularProgress
-                        variant="determinate"
-                        value={100}
-                        size={80}
-                        thickness={6}
-                        sx={{
-                          color: theme.palette.mode === 'dark' 
-                            ? 'rgba(255,255,255,0.1)' 
-                            : 'rgba(0,0,0,0.1)',
-                          position: 'absolute',
-                          left: 0,
-                        }}
-                      />
-                      <Box
-                        sx={{
-                          top: 0,
-                          left: 0,
-                          bottom: 0,
-                          right: 0,
-                          position: 'absolute',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          flexDirection: 'column',
-                        }}
-                      >
-                        <Typography
-                          variant="h6"
-                          sx={{ 
-                            color: category.color,
-                            fontWeight: 'bold',
-                            fontSize: '1.2rem'
-                          }}
-                        >
-                          {category.current}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{ 
-                            color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
-                            fontSize: '0.7rem'
-                          }}
-                        >
-                          /{category.total}
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Typography
-                      variant="h6"
-                      sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
-                        fontWeight: 600,
-                        mb: 1
-                      }}
-                    >
-                      {category.name}
-                    </Typography>
-                    <Typography
-                      variant="caption"
-                      sx={{ 
-                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280'
-                      }}
-                    >
-                      {category.unit}
-                    </Typography>
-                    <LinearProgress 
-                      variant="determinate" 
-                      value={(category.current / category.total) * 100} 
-                      sx={{ 
-                        height: 4, 
-                        borderRadius: 2,
-                        mt: 1,
-                        bgcolor: theme.palette.mode === 'dark' 
-                          ? `${category.color}20`
-                          : `${category.color}30`,
-                        '& .MuiLinearProgress-bar': {
-                          bgcolor: category.color,
-                        }
-                      }}
-                    />
-                    <Button
-                      size="small"
-                      variant="outlined"
-                      onClick={() => updateFoodCategory(category.key, 1)}
-                      disabled={category.current >= category.total}
-                      sx={{
-                        mt: 1,
-                        minWidth: 'auto',
-                        px: 1,
-                        py: 0.5,
-                        fontSize: '0.7rem',
-                        borderColor: category.color,
-                        color: category.color,
-                        '&:hover': {
-                          borderColor: category.color,
-                          backgroundColor: `${category.color}10`
-                        }
-                      }}
-                    >
-                      +1
-                    </Button>
-                  </Box>
-                </Grid>
-              ))}
-            </Grid>
-          </MotionPaper>
-        </Grid>
 
         {/* Health Goal Progress */}
         <Grid item xs={12}>
@@ -1281,17 +1040,6 @@ const Dashboard: React.FC = () => {
                   bgColor: workoutData.isCompleted ? 'rgba(255, 107, 53, 0.1)' : 'rgba(156, 163, 175, 0.1)'
                 },
                 {
-                  icon: '⚖️',
-                  value: stats.netBalance < 0 ? `${Math.abs(stats.netBalance)}` : `+${stats.netBalance}`,
-                  label: stats.netBalance < 0 ? 'Calorie Deficit' : 'Calorie Surplus',
-                  color: goalType === 'weight_loss' && stats.netBalance < 0 ? '#10B981' : 
-                         goalType === 'maintain' && Math.abs(stats.netBalance) < 200 ? '#10B981' : 
-                         goalType === 'gain' && stats.netBalance > 0 ? '#10B981' : '#F59E0B',
-                  bgColor: goalType === 'weight_loss' && stats.netBalance < 0 ? 'rgba(16, 185, 129, 0.1)' : 
-                          goalType === 'maintain' && Math.abs(stats.netBalance) < 200 ? 'rgba(16, 185, 129, 0.1)' : 
-                          goalType === 'gain' && stats.netBalance > 0 ? 'rgba(16, 185, 129, 0.1)' : 'rgba(245, 158, 11, 0.1)'
-                },
-                {
                   icon: '❤️',
                   value: `${stats.streak}`,
                   label: 'Perfect Days',
@@ -1300,7 +1048,7 @@ const Dashboard: React.FC = () => {
                 }
               ];
             })().map((item, index) => (
-              <Grid item xs={12} sm={6} md={4} key={index}>
+              <Grid item xs={12} sm={6} md={index < 3 ? 4 : 6} key={index}>
                 <MotionPaper
                   variants={itemVariants}
                   sx={{
