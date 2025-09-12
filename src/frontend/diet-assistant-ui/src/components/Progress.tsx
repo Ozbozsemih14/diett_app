@@ -49,6 +49,7 @@ interface DailyProgress {
     carbs: number;
     fat: number;
     water: number;
+    caloriesBurned: number;
   };
   meals: {
     breakfast: boolean;
@@ -66,6 +67,7 @@ const sampleProgress: DailyProgress[] = Array.from({ length: 7 }, (_, i) => ({
     carbs: Math.floor(Math.random() * 50) + 150,
     fat: Math.floor(Math.random() * 20) + 40,
     water: Math.floor(Math.random() * 2) + 6,
+    caloriesBurned: Math.floor(Math.random() * 300) + 200,
   },
   meals: {
     breakfast: Math.random() > 0.2,
@@ -109,7 +111,8 @@ export default function Progress() {
         protein: 0,
         carbs: 0,
         fat: 0,
-        water: 0
+        water: 0,
+        caloriesBurned: 0
       },
       meals: {
         breakfast: false,
@@ -200,11 +203,10 @@ export default function Progress() {
               color: '#60A5FA'
             },
             {
-              icon: <FitnessCenterIcon />,
-              label: 'Avg. Protein',
-              value: weeklyStats.avgProtein,
-              target: userData?.proteinGoal || 150,
-              color: '#34D399'
+              icon: <DirectionsRunIcon />,
+              label: 'Calories Burned',
+              value: Math.round(last7Days.reduce((acc, day) => acc + (day.consumed.caloriesBurned || 0), 0)),
+              color: '#FF6B35'
             },
             {
               icon: <WhatshotIcon />,

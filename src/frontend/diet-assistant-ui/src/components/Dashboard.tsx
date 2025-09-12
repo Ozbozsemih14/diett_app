@@ -23,6 +23,7 @@ import { useUser } from '../contexts/UserContext';
 import { useProgress } from '../contexts/ProgressContext';
 import { useDietPlan } from '../contexts/DietPlanContext';
 import { useNavigate } from 'react-router-dom';
+import { getDailyTip, getSmartTip } from '../data/nutritionTips';
 
 // Motion components
 const MotionBox = motion(Box);
@@ -1735,6 +1736,122 @@ const Dashboard: React.FC = () => {
                 </Grid>
               </Grid>
             </Box>
+          </MotionPaper>
+        </Grid>
+
+        {/* Daily Nutrition Tip */}
+        <Grid item xs={12}>
+          <MotionPaper
+            variants={itemVariants}
+            sx={{ 
+              p: 3, 
+              mb: 3,
+              background: theme.palette.mode === 'dark'
+                ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(99, 102, 241, 0.05) 100%)'
+                : 'linear-gradient(135deg, #F3E8FF 0%, #F8FAFC 100%)',
+              boxShadow: '0 8px 32px rgba(0,0,0,0.4)',
+              borderRadius: '16px',
+              backdropFilter: 'blur(10px)',
+              border: theme.palette.mode === 'dark'
+                ? '1px solid rgba(139, 92, 246, 0.3)'
+                : '1px solid rgba(139, 92, 246, 0.2)',
+            }}
+          >
+            {(() => {
+              // Get today's tip (could be smart or daily)
+              const todaysTip = getDailyTip();
+              
+              return (
+                <>
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <span style={{ fontSize: '32px', marginRight: '16px' }}>{todaysTip.icon}</span>
+                    <Box sx={{ flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#2D3748',
+                        fontWeight: 600,
+                        mb: 0.5
+                      }}>
+                        Today's Nutrition Tip
+                      </Typography>
+                      <Typography variant="body2" sx={{ 
+                        color: theme.palette.mode === 'dark' ? '#9CA3AF' : '#6B7280',
+                        textTransform: 'capitalize'
+                      }}>
+                        {todaysTip.category} • Daily Wisdom
+                      </Typography>
+                    </Box>
+                    <Chip 
+                      label="Daily" 
+                      size="small" 
+                      sx={{ 
+                        backgroundColor: '#8B5CF6', 
+                        color: 'white',
+                        fontWeight: 500 
+                      }} 
+                    />
+                  </Box>
+                  
+                  <Box sx={{ 
+                    backgroundColor: theme.palette.mode === 'dark' 
+                      ? 'rgba(139, 92, 246, 0.1)' 
+                      : 'rgba(139, 92, 246, 0.05)',
+                    borderRadius: '12px',
+                    p: 3,
+                    border: '1px solid rgba(139, 92, 246, 0.2)',
+                    mb: 3
+                  }}>
+                    <Typography variant="h6" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#FFFFFF' : '#1F2937',
+                      fontWeight: 600,
+                      mb: 2
+                    }}>
+                      {todaysTip.title}
+                    </Typography>
+                    <Typography variant="body1" sx={{ 
+                      color: theme.palette.mode === 'dark' ? '#D1D5DB' : '#4B5563',
+                      lineHeight: 1.6
+                    }}>
+                      {todaysTip.content}
+                    </Typography>
+                  </Box>
+                  
+                  <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                    <Button
+                      variant="outlined"
+                      onClick={() => {
+                        // Get a new random tip
+                        const randomTip = getDailyTip(new Date(Date.now() + Math.random() * 86400000));
+                        window.location.reload(); // Simple way to get new tip - can be improved
+                      }}
+                      sx={{
+                        borderColor: '#8B5CF6',
+                        color: '#8B5CF6',
+                        fontSize: '0.9rem',
+                        px: 3,
+                        '&:hover': {
+                          borderColor: '#7C3AED',
+                          backgroundColor: 'rgba(139, 92, 246, 0.1)'
+                        }
+                      }}
+                    >
+                      💡 Another Tip
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => navigate('/tips')}
+                      sx={{
+                        backgroundColor: '#8B5CF6',
+                        '&:hover': { backgroundColor: '#7C3AED' },
+                        fontSize: '0.9rem',
+                        px: 3
+                      }}
+                    >
+                      📚 All Tips
+                    </Button>
+                  </Box>
+                </>
+              );
+            })()}
           </MotionPaper>
         </Grid>
       </Grid>

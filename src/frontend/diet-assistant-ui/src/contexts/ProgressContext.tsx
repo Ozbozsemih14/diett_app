@@ -15,6 +15,7 @@ interface MealProgress {
     carbs: number;
     fat: number;
     water: number;
+    caloriesBurned: number;
   };
 }
 
@@ -60,7 +61,7 @@ interface ProgressContextType {
     dinner?: SelectedMeal;
   };
   updateMealProgress: (date: string, mealType: 'breakfast' | 'lunch' | 'dinner', completed: boolean) => void;
-  updateNutritionProgress: (date: string, nutrition: { calories: number; protein: number; carbs: number; fat: number; water: number }) => void;
+  updateNutritionProgress: (date: string, nutrition: { calories: number; protein: number; carbs: number; fat: number; water: number; caloriesBurned: number }) => void;
   checkAchievements: () => void;
   toggleMealCompletion: (date: string, mealType: 'breakfast' | 'lunch' | 'dinner', completed: boolean) => Promise<void>;
   setSelectedMeal: (mealType: 'breakfast' | 'lunch' | 'dinner', meal: SelectedMeal | null) => void;
@@ -192,7 +193,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
             protein: 0,
             carbs: 0,
             fat: 0,
-            water: 0
+            water: 0,
+            caloriesBurned: 0
           }
         }];
       }
@@ -208,7 +210,7 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const updateNutritionProgress = (date: string, nutrition: { calories: number; protein: number; carbs: number; fat: number; water: number }) => {
+  const updateNutritionProgress = (date: string, nutrition: { calories: number; protein: number; carbs: number; fat: number; water: number; caloriesBurned: number }) => {
     setMealProgress(prev => {
       const dayIndex = prev.findIndex(d => d.date === date);
       if (dayIndex === -1) {
@@ -226,7 +228,8 @@ export function ProgressProvider({ children }: { children: React.ReactNode }) {
           protein: Math.max(0, updated[dayIndex].consumed.protein + nutrition.protein),
           carbs: Math.max(0, updated[dayIndex].consumed.carbs + nutrition.carbs),
           fat: Math.max(0, updated[dayIndex].consumed.fat + nutrition.fat),
-          water: Math.max(0, updated[dayIndex].consumed.water + nutrition.water)
+          water: Math.max(0, updated[dayIndex].consumed.water + nutrition.water),
+          caloriesBurned: Math.max(0, updated[dayIndex].consumed.caloriesBurned + nutrition.caloriesBurned)
         }
       };
       return updated;
